@@ -5,6 +5,7 @@ import { QuestionsModule } from './questions/questions.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { LoggerMiddleware } from './core/middleware/logger.middleware';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { LoggerMiddleware } from './core/middleware/logger.middleware';
     UsersModule,
     AuthModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [],
 })
 export class AppModule implements NestModule {
