@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Tag, BarChart3, Eye, EyeOff } from 'lucide-react';
-import { Category } from '../../types';
-import { categories as initialCategories, mockQuestions } from '../../data/mockData';
+import type { Category } from 'shared/types/category';
+import { fetchCategories } from '../../api/categories';
+import { mockQuestions } from '../../data/mockData';
 import ConfirmationModal from '../Common/ConfirmationModal';
 import Pagination from '../Common/Pagination';
 
 const CategoriesManager: React.FC = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Fetch from API on mount
+  useEffect(() => {
+    fetchCategories()
+      .then(setCategories)
+      .catch(e => console.error(e));
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,15 +60,21 @@ const CategoriesManager: React.FC = () => {
     });
   };
 
-  const confirmDelete = () => {
-    setCategories(categories.filter(c => c.id !== deleteModal.categoryId));
-    setDeleteModal({ isOpen: false, categoryId: '', categoryName: '' });
-    
-    // Reset to first page if current page becomes empty
-    const newFilteredCategories = categories.filter(c => c.id !== deleteModal.categoryId);
-    const newTotalPages = Math.ceil(newFilteredCategories.length / itemsPerPage);
-    if (currentPage > newTotalPages && newTotalPages > 0) {
-      setCurrentPage(newTotalPages);
+  const confirmDelete = async () => {
+    try {
+      await deleteCategory(deleteModal.categoryId);
+      // Refresh categories from API
+      const updated = await fetchCategories();
+      setCategories(updated);
+      setDeleteModal({ isOpen: false, categoryId: '', categoryName: '' });
+
+      // Reset to first page if current page becomes empty
+      const newTotalPages = Math.ceil(updated.length / itemsPerPage);
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete category.');
     }
   };
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Palette, Tag, AlertCircle } from 'lucide-react';
-import { Category } from '../../types';
-import { categories as mockCategories } from '../../data/mockData';
+import type { Category } from 'shared/types/category';
+import { createCategory, updateCategory, fetchCategory } from '../../api/categories';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const CategoryForm: React.FC = () => {
@@ -38,22 +38,18 @@ const CategoryForm: React.FC = () => {
   useEffect(() => {
     if (isEditing && id) {
       setIsLoading(true);
-      
-      // Simulate loading delay for better UX
-      setTimeout(() => {
-        const existingCategory = mockCategories.find(cat => cat.id === id);
-        if (existingCategory) {
-          setCategory(existingCategory);
+      fetchCategory(id)
+        .then(existingCategory => {
           setFormData({
-            name: existingCategory.name,
-            description: existingCategory.description,
-            color: existingCategory.color,
+            name: existingCategory.name || '',
+            description: existingCategory.description || '',
+            color: existingCategory.color || '#3B82F6',
           });
-        } else {
+          setIsLoading(false);
+        })
+        .catch(() => {
           navigate('/categories');
-        }
-        setIsLoading(false);
-      }, 500);
+        });
     }
   }, [id, isEditing, navigate]);
 
@@ -67,14 +63,6 @@ const CategoryForm: React.FC = () => {
       newErrors.name = 'Category name must be at least 2 characters';
     } else if (formData.name.trim().length > 50) {
       newErrors.name = 'Category name must be less than 50 characters';
-    } else {
-      const isDuplicate = mockCategories.some(cat => 
-        cat.name.toLowerCase() === formData.name.trim().toLowerCase() && 
-        cat.id !== id
-      );
-      if (isDuplicate) {
-        newErrors.name = 'A category with this name already exists';
-      }
     }
 
     // Description validation
@@ -97,12 +85,26 @@ const CategoryForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      console.log('Saving category:', formData);
+    if (!validateForm()) return;
+
+    try {
+      setIsLoading(true);
+      if (isEditing && id) {
+        await updateCategory(id, formData);
+      } else {
+        await createCategory(formData);
+      }
       navigate('/categories');
+    } catch (error: any) {
+      // Prefer to set the field error, or if unknown, show at top
+      if (error.message && error.message.includes('name')) {
+        setErrors(prev => ({ ...prev, name: error.message }));
+      } else {
+        setErrors(prev => ({ ...prev, server: error.message || 'An error occurred.' }));
+      }
+      setIsLoading(false);
     }
   };
 
@@ -175,6 +177,12 @@ const CategoryForm: React.FC = () => {
           </div>
         </div>
 
+        {errors.server && (
+          <div className="mb-4 flex items-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+            <span className="block">{errors.server}</span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Category Name */}
           <div>

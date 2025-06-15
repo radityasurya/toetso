@@ -1,9 +1,2 @@
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  color?: string;
-  questionCount?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+// Deprecated: please import Category from shared/types/category
+export {};

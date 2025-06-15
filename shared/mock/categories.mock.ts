@@ -1,4 +1,6 @@
-export const categories = [
+import { Category } from '../types/category';
+
+export const categories: Category[] = [
   { id: '1', name: 'Traffic Signs', description: 'Road signs and signals', color: '#3B82F6', questionCount: 45 },
   { id: '2', name: 'Road Rules', description: 'Traffic laws and regulations', color: '#10B981', questionCount: 38 },
   { id: '3', name: 'Vehicle Safety', description: 'Safety equipment and procedures', color: '#F59E0B', questionCount: 29 },

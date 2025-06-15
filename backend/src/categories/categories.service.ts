@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Category } from './categories.interface';
-import { categories as startCategories } from './categories.mock';
+import { Category } from 'shared/types/category';
+import { categories as startCategories } from 'shared/mock/categories.mock';
 import { CreateCategoryDto, UpdateCategoryDto } from './category.dto';
 
 @Injectable()
