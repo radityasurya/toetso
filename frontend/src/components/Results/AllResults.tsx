@@ -291,15 +291,12 @@ const AllResults: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Quiz Results</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive view of all quiz attempts and results</p>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <button
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Quiz Results</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive view of all quiz attempts and results</p>
+        </div>
+        <button
               onClick={exportToCSV}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
               title="Export all results as CSV"
@@ -307,12 +304,12 @@ const AllResults: React.FC = () => {
               <Download className="w-4 h-4" />
               <span>Export CSV</span>
             </button>
-          </div>
-        </div>
-
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
         {/* Overall Statistics */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 rounded-lg transition-colors">
             <div className="text-center">
               <div className="text-lg font-semibold text-gray-900 dark:text-white">{stats.totalAttempts}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Attempts</div>
@@ -338,8 +335,8 @@ const AllResults: React.FC = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-4">
+      <div className="transition-colors">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between ">
           <div className="flex items-center space-x-4">
             <div className="relative">
               <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -352,17 +349,18 @@ const AllResults: React.FC = () => {
               />
             </div>
             
+            
+          </div>
+          
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500  transition-colors"
             >
               <Filter className="w-4 h-4" />
               <span>Filters</span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
-          </div>
-          
-          <div className="flex items-center space-x-4">
             <select
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
@@ -386,7 +384,7 @@ const AllResults: React.FC = () => {
 
         {/* Expandable Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="grid py-6 pt-10 grid-cols-1 md:grid-cols-4 gap-4 pt-4 ">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quiz</label>
               <select
