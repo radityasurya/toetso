@@ -22,6 +22,9 @@ import StudentQuizEntry from './components/Student/StudentQuizEntry';
 import StudentQuizTaking from './components/Student/StudentQuizTaking';
 import StudentQuizResults from './components/Student/StudentQuizResults';
 import { ViewType } from './types';
+import LoginPage from './components/Auth/LoginPage';
+import SignupPage from './components/Auth/SignupPage';
+import ProfilePage from './components/Profile/ProfilePage';
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,6 +71,8 @@ function AppContent() {
             <div className="max-w-7xl mx-auto">
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
                 <Route path="/dashboard" element={
                   <RouteLoader>
                     <DashboardOverview />
@@ -141,6 +146,11 @@ function AppContent() {
                     <SettingsPage />
                   </RouteLoader>
                 } />
+                <Route path="/profile/me" element={
+                  <RouteLoader>
+                    <ProfilePage />
+                  </RouteLoader>
+                } />
                 
                 {/* Student Routes */}
                 <Route path="/quiz/:id" element={
@@ -173,7 +183,13 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <AppContent />
+        <Routes>
+          {/* Auth pages shown full-screen */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          {/* Everything else through AppContent layout */}
+          <Route path="/*" element={<AppContent />} />
+        </Routes>
       </Router>
     </ThemeProvider>
   );

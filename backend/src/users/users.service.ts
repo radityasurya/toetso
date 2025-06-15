@@ -24,8 +24,11 @@ export class UsersService {
   }
 
   async create(body: CreateUserDto): Promise<User> {
-    if (this.findByUsername(body.username)) {
+    if (this.users.find(u => u.username === body.username)) {
       throw new BadRequestException('Username already exists');
+    }
+    if (this.users.find(u => u.email === body.email)) {
+      throw new BadRequestException('Email already exists');
     }
     const now = new Date();
     const hashedPassword = await bcrypt.hash(body.password, 10);

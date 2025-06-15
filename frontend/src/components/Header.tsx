@@ -201,19 +201,18 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
     setShowThemeMenu(false);
     switch (action) {
       case 'profile':
-        // Navigate to profile page (not implemented yet)
-        console.log('Navigate to profile');
+        navigate('/profile/me');
         break;
       case 'settings':
         navigate('/settings');
         break;
       case 'help':
-        // Open help documentation
-        console.log('Open help');
+        window.open('/dashboard', '_blank');
         break;
       case 'logout':
-        // Handle logout
-        console.log('Logout user');
+        // Remove token/session and redirect to login
+        localStorage.removeItem('access_token');
+        navigate('/login');
         break;
     }
   };

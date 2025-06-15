@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsIn } from 'class-validator';
 
 export class SignupAuthDto {
   @IsString()
@@ -10,6 +10,13 @@ export class SignupAuthDto {
   password: string;
 
   @IsEmail()
-  @IsOptional()
-  email?: string;
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsIn(['teacher', 'student'])
+  role: 'teacher' | 'student';
 }
