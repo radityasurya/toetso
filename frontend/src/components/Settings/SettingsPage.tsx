@@ -25,7 +25,7 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState({
     // General Settings
-    siteName: 'Quiz Master',
+    siteName: 'Kuizzz',
     siteDescription: 'Theory Exam Dashboard',
     defaultLanguage: 'en',
     timezone: 'UTC',
@@ -115,6 +115,8 @@ const SettingsPage: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  React.useEffect(() => { document.title = 'Settings | Kuizzz'; }, []);
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">

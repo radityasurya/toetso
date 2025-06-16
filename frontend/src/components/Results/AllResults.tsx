@@ -172,6 +172,8 @@ const AllResults: React.FC = () => {
     setResults(mockAllResults);
   }, []);
 
+  useEffect(() => { document.title = 'All Quiz Results | Kuizzz'; }, []);
+
   const filteredResults = results.filter(result => {
     const matchesSearch = result.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          result.studentEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||

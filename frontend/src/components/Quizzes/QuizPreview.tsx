@@ -29,6 +29,10 @@ const QuizPreview: React.FC = () => {
     }
   }, [id, navigate]);
 
+  useEffect(() => {
+    document.title = 'Quiz Preview | Kuizzz';
+  }, []);
+
   const quizQuestions = quiz ? mockQuestions.filter(q => quiz.questions.includes(q.id)) : [];
   const currentQuestion = quizQuestions[currentQuestionIndex];
 
@@ -257,7 +261,7 @@ const QuizPreview: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Quiz Header */}
+    {/* Quiz Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">

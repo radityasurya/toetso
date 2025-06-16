@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Search, Check, X, ChevronUp, ChevronDown, HelpCircle, Home, ChevronRight } from 'lucide-react';
 import { Quiz, Question } from '../../types';
@@ -568,59 +569,135 @@ const QuizForm: React.FC = () => {
                   </div>
                 )}
 
+
                 {/* Selected Questions */}
                 <div className="space-y-3">
-                  {selectedQuestions.map((question, index) => (
-                    <div key={question.id} className="flex items-start space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors">
-                      <div className="flex flex-col space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => moveQuestion(question.id, 'up')}
-                          disabled={index === 0}
-                          className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  <div className="flex justify-end mb-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Fisher-Yates shuffle
+                        const shuffled = Array.from(formData.questions);
+                        for (let i = shuffled.length - 1; i > 0; i--) {
+                          const j = Math.floor(Math.random() * (i + 1));
+                          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                        }
+                        setFormData({
+                          ...formData,
+                          questions: shuffled,
+                        });
+                      }}
+                      className="flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-white border border-blue-300 dark:border-blue-700 rounded px-2 py-1 ml-2 gap-1"
+                      title="Shuffle Questions"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4l6.586 6.586a2 2 0 002.828 0l1.586-1.586a2 2 0 012.828 0L20 16m0 0l-6 6m6-6H10" /></svg>
+                      Shuffle
+                    </button>
+                  </div>
+                  <DragDropContext
+                    onDragEnd={({ source, destination }) => {
+                      if (!destination || source.index === destination.index) return;
+                      const reordered = Array.from(formData.questions);
+                      const [removed] = reordered.splice(source.index, 1);
+                      reordered.splice(destination.index, 0, removed);
+                      setFormData({
+                        ...formData,
+                        questions: reordered,
+                      });
+                    }}
+                  >
+                    <Droppable droppableId="questions-droppable">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-3"
                         >
-                          <ChevronUp className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveQuestion(question.id, 'down')}
-                          disabled={index === selectedQuestions.length - 1}
-                          className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </button>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Q{index + 1}</span>
-                          <span className="text-xs text-blue-600 dark:text-blue-400">{question.category}</span>
-                          <span className="text-xs text-blue-600 dark:text-blue-400">•</span>
-                          <span className="text-xs text-blue-600 dark:text-blue-400">{question.difficulty}</span>
+                          {formData.questions.map((questionId, index) => {
+                            const question = mockQuestions.find(q => q.id === questionId);
+                            if (!question) return null;
+                            return (
+                              <Draggable
+                                draggableId={String(question.id)}
+                                index={index}
+                                key={question.id}
+                              >
+                                {(dragProvided, dragSnapshot) => (
+                                  <div
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                  style={dragProvided.draggableProps.style}
+                                  className={
+                                    "flex items-start space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors"+
+                                    (dragSnapshot.isDragging ? " ring-2 ring-blue-400 dark:ring-blue-300" : "")
+                                  }
+                                >
+                                  <div className="flex flex-col space-y-1 items-center justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => moveQuestion(question.id, 'up')}
+                                      disabled={index === 0}
+                                      className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
+                                      title="Move up"
+                                      tabIndex={-1}
+                                    >
+                                      <ChevronUp className="w-4 h-4" />
+                                    </button>
+                                    <span
+                                      className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab"
+                                      title="Drag to reorder"
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.5" fill="currentColor" /><circle cx="13" cy="5" r="1.5" fill="currentColor" /><circle cx="7" cy="10" r="1.5" fill="currentColor" /><circle cx="13" cy="10" r="1.5" fill="currentColor" /><circle cx="7" cy="15" r="1.5" fill="currentColor" /><circle cx="13" cy="15" r="1.5" fill="currentColor" /></svg>
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveQuestion(question.id, 'down')}
+                                      disabled={index === formData.questions.length - 1}
+                                      className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
+                                      title="Move down"
+                                      tabIndex={-1}
+                                    >
+                                      <ChevronDown className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center space-x-2 mb-1">
+                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Q{index + 1}</span>
+                                        <span className="text-xs text-blue-600 dark:text-blue-400">{question.category}</span>
+                                        <span className="text-xs text-blue-600 dark:text-blue-400">•</span>
+                                        <span className="text-xs text-blue-600 dark:text-blue-400">{question.difficulty}</span>
+                                      </div>
+                                      <p className="text-sm text-gray-900 dark:text-white">{question.question}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeQuestion(question.id)}
+                                      className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                          {formData.questions.length === 0 && (
+                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                              <p className="text-sm">No questions added yet</p>
+                              <p className="text-xs">Click on questions above or create new ones to get started</p>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-900 dark:text-white">{question.question}</p>
-                      </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => removeQuestion(question.id)}
-                        className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {formData.questions.length === 0 && (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <p className="text-sm">No questions added yet</p>
-                      <p className="text-xs">Click on questions above or create new ones to get started</p>
-                    </div>
-                  )}
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 </div>
               </div>
             </div>
           </div>
+
 
           {/* Form Actions */}
           <div className="flex justify-end space-x-4 pt-6 mt-8 border-t border-gray-200 dark:border-gray-700">

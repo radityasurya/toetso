@@ -31,6 +31,8 @@ const AnalyticsDashboard: React.FC = () => {
     { period: 'Three Weeks Ago', quizzes: 94, avgScore: 77.2, improvement: '+4.7%' },
   ];
 
+  React.useEffect(() => { document.title = 'Analytics | Kuizzz'; }, []);
+
   return (
     <div className="space-y-6">
       {/* Page Title */}

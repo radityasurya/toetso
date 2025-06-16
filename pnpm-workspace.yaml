@@ -1,4 +1,7 @@
 packages:
-  - 'frontend'
-  - 'backend'
-  - 'shared'
+  - frontend
+  - backend
+  - shared
+
+onlyBuiltDependencies:
+  - bson

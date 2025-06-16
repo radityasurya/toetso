@@ -25,6 +25,8 @@ const DashboardOverview: React.FC = () => {
     { name: 'Parking', questions: 22, successRate: 71, color: 'bg-red-500' },
   ];
 
+  React.useEffect(() => { document.title = 'Dashboard | Kuizzz'; }, []);
+
   return (
     <div className="space-y-6">
       {/* Stats Grid */}

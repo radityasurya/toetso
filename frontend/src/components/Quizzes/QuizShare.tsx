@@ -39,6 +39,9 @@ const QuizShare: React.FC = () => {
     }
   }, [id, navigate]);
 
+
+  useEffect(() => { document.title = 'Quizzes | Kuizzz'; }, []);
+
   const handleCopyUrl = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);

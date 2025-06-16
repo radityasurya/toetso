@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Tag, BarChart3, Eye, EyeOff } from 'lucide-react';
 import type { Category } from 'shared/types/category';
@@ -96,6 +97,8 @@ const CategoriesManager: React.FC = () => {
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  React.useEffect(() => { document.title = 'Categories | Kuizzz'; }, []);
 
   return (
     <div className="space-y-6">

@@ -18,6 +18,8 @@ interface QuizResult {
   answers: { [questionIndex: number]: number };
 }
 
+
+
 const QuizResults: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -206,6 +208,10 @@ const QuizResults: React.FC = () => {
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus]);
+
+  React.useEffect(() => {
+    document.title = 'Quiz Results | Kuizzz';
+  }, []);
 
   if (!quiz) {
     return (

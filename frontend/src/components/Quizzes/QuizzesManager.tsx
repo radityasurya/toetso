@@ -112,6 +112,8 @@ const QuizzesManager: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, selectedDifficulty]);
 
+  React.useEffect(() => { document.title = 'Quizzes | Kuizzz'; }, []);
+
   return (
     <div className="space-y-6">
       {/* Page Title */}

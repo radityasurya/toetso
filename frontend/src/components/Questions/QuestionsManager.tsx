@@ -77,6 +77,7 @@ const QuestionsManager: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, selectedDifficulty]);
 
+  React.useEffect(() => { document.title = 'Questions | Kuizzz'; }, []);
   return (
     <div className="space-y-6">
       {/* Page Title */}
@@ -86,7 +87,6 @@ const QuestionsManager: React.FC = () => {
           Create and manage questions for your driving theory exams
         </p>
       </div>
-
       {/* Page Navbar */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         {/* Left side - Add button and search */}
@@ -99,7 +99,6 @@ const QuestionsManager: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span>Add Question</span>
           </button>
-          
           <div className="relative">
             <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
             <input
@@ -111,8 +110,6 @@ const QuestionsManager: React.FC = () => {
             />
           </div>
         </div>
-        
-        {/* Right side - Filters and view toggle */}
         <div className="flex items-center space-x-4">
           <select
             value={selectedCategory}
@@ -124,7 +121,6 @@ const QuestionsManager: React.FC = () => {
               <option key={cat.id} value={cat.name}>{cat.name}</option>
             ))}
           </select>
-          
           <select
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value)}
@@ -135,8 +131,6 @@ const QuestionsManager: React.FC = () => {
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
-
-          {/* View Toggle */}
           <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-1 transition-colors">
             <button
               onClick={() => setViewMode('grid')}
@@ -171,7 +165,6 @@ const QuestionsManager: React.FC = () => {
 
       {/* Questions Display */}
       {viewMode === 'grid' ? (
-        /* Grid View */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {paginatedQuestions.map((question) => (
             <div key={question.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 card-hover flex flex-col">
@@ -186,8 +179,6 @@ const QuestionsManager: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  
-                  {/* Action Buttons - Grouped */}
                   <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1 ml-4">
                     <button
                       onClick={() => handleEditQuestion(question.id)}
@@ -205,7 +196,6 @@ const QuestionsManager: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                
                 <div className="space-y-2 mb-4">
                   {question.options.map((option, index) => (
                     <div key={index} className={`p-2 rounded transition-colors ${
@@ -222,7 +212,6 @@ const QuestionsManager: React.FC = () => {
                     </div>
                   ))}
                 </div>
-                
                 {question.explanation && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3 transition-colors mb-4">
                     <p className="text-sm text-blue-800 dark:text-blue-300">
@@ -231,8 +220,6 @@ const QuestionsManager: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {/* Question Footer with dates - Stick to bottom */}
               <div className="px-6 py-3 rounded-b-lg transition-colors mt-auto">
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span>Created {question.createdAt.toLocaleDateString()}</span>
@@ -243,7 +230,6 @@ const QuestionsManager: React.FC = () => {
           ))}
         </div>
       ) : (
-        /* List View */
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -311,10 +297,7 @@ const QuestionsManager: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Pagination - After cards */}
       <div className="flex justify-between items-center">
-        {/* Left side - Pagination */}
         <div>
           {totalPages > 1 && (
             <Pagination
@@ -326,8 +309,6 @@ const QuestionsManager: React.FC = () => {
             />
           )}
         </div>
-        
-        {/* Right side - Items per page selector */}
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-700 dark:text-gray-300">Show</span>
           <select
@@ -346,7 +327,6 @@ const QuestionsManager: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300">per page</span>
         </div>
       </div>
-
       {filteredQuestions.length === 0 && (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -369,8 +349,6 @@ const QuestionsManager: React.FC = () => {
           )}
         </div>
       )}
-
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, questionId: '', questionText: '' })}
