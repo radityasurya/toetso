@@ -14,7 +14,7 @@ interface Submission {
 interface SubmissionListProps {
   submissions: Submission[];
   selectedSubmissionId: string | null;
-  onSelectSubmission: (submission: Submission) => void;
+  onSelectSubmission: (submissionId: string) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -50,7 +50,7 @@ const SubmissionList: React.FC<SubmissionListProps> = ({
               score={submission.score}
               status={submission.status}
               isSelected={selectedSubmissionId === submission.id}
-              onClick={() => onSelectSubmission(submission)}
+              onClick={() => onSelectSubmission(submission.id)}
             />
           ))
         ) : (
