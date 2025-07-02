@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit, Trash2, Tag, BarChart3, Eye, EyeOff } from 'lucide-react';
 import { Category } from '../../types';
 import { categories as initialCategories, mockQuestions } from '../../data/mockData';
 import ConfirmationModal from '../Common/ConfirmationModal';
@@ -18,10 +17,16 @@ const CategoriesManager: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; categoryId: string; categoryName: string }>({
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    categoryId: string;
+    categoryName: string;
+    questionsInCategory?: number;
+  }>({
     isOpen: false,
     categoryId: '',
-    categoryName: ''
+    categoryName: '',
+    questionsInCategory: 0,
   });
 
   const filteredCategories = categories.filter(category =>
@@ -42,25 +47,18 @@ const CategoriesManager: React.FC = () => {
   const handleDeleteCategory = (id: string) => {
     const category = categories.find(c => c.id === id);
     if (!category) return;
-
     const questionsInCategory = mockQuestions.filter(q => q.category === category.name).length;
-    
-    let message = 'This action cannot be undone.';
-    if (questionsInCategory > 0) {
-      message = `This category contains ${questionsInCategory} questions. Deleting it will remove all associated questions. This action cannot be undone.`;
-    }
-
     setDeleteModal({
       isOpen: true,
       categoryId: id,
-      categoryName: category.name
+      categoryName: category.name,
+      questionsInCategory,
     });
   };
 
   const confirmDelete = () => {
     setCategories(categories.filter(c => c.id !== deleteModal.categoryId));
-    setDeleteModal({ isOpen: false, categoryId: '', categoryName: '' });
-    
+    setDeleteModal({ isOpen: false, categoryId: '', categoryName: '', questionsInCategory: 0 });
     // Reset to first page if current page becomes empty
     const newFilteredCategories = categories.filter(c => c.id !== deleteModal.categoryId);
     const newTotalPages = Math.ceil(newFilteredCategories.length / itemsPerPage);
@@ -176,13 +174,12 @@ const CategoriesManager: React.FC = () => {
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, categoryId: '', categoryName: '' })}
+        onClose={() => setDeleteModal({ isOpen: false, categoryId: '', categoryName: '', questionsInCategory: 0 })}
         onConfirm={confirmDelete}
         title="Delete Category"
         message={`Are you sure you want to delete "${deleteModal.categoryName}"? ${
-          categories.find(c => c.id === deleteModal.categoryId) && 
-          getCategoryStats(categories.find(c => c.id === deleteModal.categoryId)!.name).total > 0
-            ? `This category contains ${getCategoryStats(categories.find(c => c.id === deleteModal.categoryId)!.name).total} questions. Deleting it will remove all associated questions. `
+          deleteModal.questionsInCategory && deleteModal.questionsInCategory > 0
+            ? `This category contains ${deleteModal.questionsInCategory} questions. Deleting it will remove all associated questions. `
             : ''
         }This action cannot be undone.`}
         confirmText="Delete Category"

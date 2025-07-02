@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Menu, Settings, LogOut, UserCircle, HelpCircle, ChevronDown, BookOpen, Sun, Moon, Monitor, ChevronRight, FileText, Tag, BarChart3 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Bell, User, Menu, Settings, LogOut, UserCircle, HelpCircle, ChevronDown, BookOpen, Sun, Moon, Monitor, ChevronRight, FileText, Tag } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { settingsApi } from '../api';
 
 interface HeaderProps {
-  onAddNew: () => void;
   onMenuClick: () => void;
 }
 
@@ -27,16 +26,20 @@ interface SearchResult {
   path: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
-  const location = useLocation();
+const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
-  const { theme, actualTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [siteSettings, setSiteSettings] = useState<any>(null);
+  interface SiteSettings {
+    primaryColor?: string;
+    siteName?: string;
+    // Add more as needed
+  }
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
