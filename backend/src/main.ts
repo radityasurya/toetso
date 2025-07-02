@@ -12,8 +12,8 @@ async function bootstrap() {
 
   // Swagger setup
   const config = new DocumentBuilder()
-    .setTitle('Kuizzz API')
-    .setDescription('API documentation for Kuizzz backend (JWT Auth, roles, RBAC, etc)')
+    .setTitle('toet API')
+    .setDescription('API documentation for toet backend (JWT Auth, roles, RBAC, etc)')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

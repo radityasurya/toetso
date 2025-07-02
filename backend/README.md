@@ -1,4 +1,4 @@
-# Kuizzz Backend API
+# toet Backend API
 
 A NestJS backend with JWT authentication, protected admin endpoints, role-based access control (RBAC), password hashing, and mock data for users, categories, and questions.
 

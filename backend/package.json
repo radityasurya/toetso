@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Kuizzz API backend (NestJS + JWT + Swagger)",
+  "description": "toet API backend (NestJS + JWT + Swagger)",
   "main": "dist/main.js",
   "private": true,
   "scripts": {
