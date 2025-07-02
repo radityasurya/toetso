@@ -1,6 +1,6 @@
-# Kuizzz Monorepo
+# toet Monorepo
 
-This is a monorepo for the Kuizzz application, containing:
+This is a monorepo for the toet application, containing:
 - `frontend/` — Vite + React client app
 - `backend/`  — NestJS REST API with JWT authentication and Swagger docs
 

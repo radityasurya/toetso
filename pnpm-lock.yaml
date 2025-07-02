@@ -93,6 +93,9 @@ importers:
       react-router-dom:
         specifier: ^6.20.1
         version: 6.30.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-simple-wysiwyg:
+        specifier: ^2.2.5
+        version: 2.2.5(react@18.3.1)
       shared:
         specifier: ^0.2.0
         version: 0.2.0
@@ -1877,6 +1880,11 @@ packages:
   react-router@6.30.1:
     resolution: {integrity: sha512-X1m21aEmxGXqENEPG3T6u0Th7g0aS4ZmoNynhbs+Cn+q+QGTLt+d5IQ2bHAXKzKcxGJjxACpVbnYQSCRcfxHlQ==}
     engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
+
+  react-simple-wysiwyg@2.2.5:
+    resolution: {integrity: sha512-cNut1O8wAavVJKi3cobLlM3VIjiJG4clBSJDEz4Rgc6V+ww7bmjp8KGTuJJw79ZAsJDYGfN1ic/80u2et8GZZg==}
     peerDependencies:
       react: '>=16.8'
 
@@ -4006,6 +4014,10 @@ snapshots:
   react-router@6.30.1(react@18.3.1):
     dependencies:
       '@remix-run/router': 1.23.0
+      react: 18.3.1
+
+  react-simple-wysiwyg@2.2.5(react@18.3.1):
+    dependencies:
       react: 18.3.1
 
   react@18.3.1:
