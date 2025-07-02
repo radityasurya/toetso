@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Download, Calendar, User, Trophy, Clock, Target, FileText, BarChart3, TrendingUp, TrendingDown, Eye, X, Filter, ChevronDown } from 'lucide-react';
+import { Search, Download, Filter, ChevronDown } from 'lucide-react';
 import { Quiz } from '../../types';
 import { mockQuizzes, mockQuestions } from '../../data/mockData';
 import Pagination from '../Common/Pagination';
+import GradingStatusBadge from '../Common/QuizComponents/GradingStatusBadge';
+import ResultsHeader from './components/ResultsHeader';
+import ResultsFilters from './components/ResultsFilters';
+import ResultsTable from './components/ResultsTable';
+import ResultsStats from './components/ResultsStats';
+import EmptyResultsState from './components/EmptyResultsState';
 
 interface QuizResult {
   id: string;
@@ -11,15 +17,18 @@ interface QuizResult {
   quizTitle: string;
   studentName: string;
   studentEmail: string;
-  score: number;
+  score: number | null;
   totalQuestions: number;
   correctAnswers: number;
   timeSpent: number; // in seconds
   completedAt: Date;
-  passed: boolean;
-  answers: { [questionIndex: number]: number };
+  status: 'needs_grading' | 'partially_graded' | 'graded' | 'passed' | 'failed';
+  answers: { [questionIndex: number]: any };
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  feedback?: { [questionIndex: number]: string };
+  manualScores?: { [questionIndex: number]: number };
+  generalFeedback?: string;
 }
 
 const AllResults: React.FC = () => {
@@ -27,152 +36,116 @@ const AllResults: React.FC = () => {
   const [results, setResults] = useState<QuizResult[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterQuiz, setFilterQuiz] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'passed' | 'failed'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'passed' | 'failed' | 'needs_grading'>('all');
   const [filterCategory, setFilterCategory] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'name' | 'quiz'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [selectedResult, setSelectedResult] = useState<QuizResult | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Mock comprehensive results data
-  const mockAllResults: QuizResult[] = [
-    {
-      id: '1',
-      quizId: '1',
-      quizTitle: 'Basic Traffic Signs',
-      studentName: 'John Smith',
-      studentEmail: 'john.smith@email.com',
-      score: 85,
-      totalQuestions: 10,
-      correctAnswers: 8,
-      timeSpent: 720,
-      completedAt: new Date('2024-01-25T10:30:00'),
-      passed: true,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2, 8: 0, 9: 1 },
-      category: 'Traffic Signs',
-      difficulty: 'easy'
-    },
-    {
-      id: '2',
-      quizId: '2',
-      quizTitle: 'Road Rules Comprehensive',
-      studentName: 'Sarah Johnson',
-      studentEmail: 'sarah.j@email.com',
-      score: 92,
-      totalQuestions: 15,
-      correctAnswers: 14,
-      timeSpent: 1080,
-      completedAt: new Date('2024-01-25T14:15:00'),
-      passed: true,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2, 8: 0, 9: 1 },
-      category: 'Road Rules',
-      difficulty: 'medium'
-    },
-    {
-      id: '3',
-      quizId: '1',
-      quizTitle: 'Basic Traffic Signs',
-      studentName: 'Mike Davis',
-      studentEmail: 'mike.davis@email.com',
-      score: 65,
-      totalQuestions: 10,
-      correctAnswers: 6,
-      timeSpent: 900,
-      completedAt: new Date('2024-01-24T16:45:00'),
-      passed: false,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2, 8: 0, 9: 1 },
-      category: 'Traffic Signs',
-      difficulty: 'easy'
-    },
-    {
-      id: '4',
-      quizId: '4',
-      quizTitle: 'Emergency Response',
-      studentName: 'Emily Wilson',
-      studentEmail: 'emily.w@email.com',
-      score: 78,
-      totalQuestions: 8,
-      correctAnswers: 6,
-      timeSpent: 540,
-      completedAt: new Date('2024-01-24T09:20:00'),
-      passed: false,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2 },
-      category: 'Emergency Situations',
-      difficulty: 'hard'
-    },
-    {
-      id: '5',
-      quizId: '5',
-      quizTitle: 'Parking Rules & Regulations',
-      studentName: 'David Brown',
-      studentEmail: 'david.brown@email.com',
-      score: 88,
-      totalQuestions: 12,
-      correctAnswers: 10,
-      timeSpent: 780,
-      completedAt: new Date('2024-01-23T11:10:00'),
-      passed: true,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2, 8: 0, 9: 1 },
-      category: 'Parking',
-      difficulty: 'medium'
-    },
-    {
-      id: '6',
-      quizId: '2',
-      quizTitle: 'Road Rules Comprehensive',
-      studentName: 'Lisa Anderson',
-      studentEmail: 'lisa.a@email.com',
-      score: 73,
-      totalQuestions: 15,
-      correctAnswers: 11,
-      timeSpent: 1200,
-      completedAt: new Date('2024-01-23T15:30:00'),
-      passed: false,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2, 8: 0, 9: 1 },
-      category: 'Road Rules',
-      difficulty: 'medium'
-    },
-    {
-      id: '7',
-      quizId: '3',
-      quizTitle: 'Vehicle Safety Essentials',
-      studentName: 'Robert Taylor',
-      studentEmail: 'robert.t@email.com',
-      score: 95,
-      totalQuestions: 6,
-      correctAnswers: 6,
-      timeSpent: 360,
-      completedAt: new Date('2024-01-22T13:45:00'),
-      passed: true,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0 },
-      category: 'Vehicle Safety',
-      difficulty: 'easy'
-    },
-    {
-      id: '8',
-      quizId: '4',
-      quizTitle: 'Emergency Response',
-      studentName: 'Jennifer Lee',
-      studentEmail: 'jennifer.l@email.com',
-      score: 82,
-      totalQuestions: 8,
-      correctAnswers: 7,
-      timeSpent: 600,
-      completedAt: new Date('2024-01-22T10:15:00'),
-      passed: false,
-      answers: { 0: 1, 1: 2, 2: 0, 3: 1, 4: 2, 5: 0, 6: 1, 7: 2 },
-      category: 'Emergency Situations',
-      difficulty: 'hard'
-    }
-  ];
-
+  // Generate mock comprehensive results data
   useEffect(() => {
+    const mockAllResults: QuizResult[] = [];
+    
+    // Generate 30 mock results
+    for (let i = 1; i <= 30; i++) {
+      const quizIndex = Math.floor(Math.random() * mockQuizzes.length);
+      const quiz = mockQuizzes[quizIndex];
+      const quizQuestions = mockQuestions.filter(q => quiz.questions.includes(q.id));
+      
+      const score = Math.floor(Math.random() * 41) + 60; // Random score between 60-100
+      const correctAnswers = Math.floor((score / 100) * quizQuestions.length);
+      const answers: { [questionIndex: number]: any } = {};
+      
+      // Generate random answers for each question
+      quizQuestions.forEach((question, index) => {
+        if (question.type === 'multiple-choice') {
+          answers[index] = Math.floor(Math.random() * (question.options?.length || 4));
+        } else if (question.type === 'multiple-answer') {
+          const numOptions = question.options?.length || 4;
+          const numAnswers = Math.floor(Math.random() * numOptions) + 1;
+          const selectedAnswers = [];
+          for (let j = 0; j < numAnswers; j++) {
+            selectedAnswers.push(Math.floor(Math.random() * numOptions));
+          }
+          answers[index] = [...new Set(selectedAnswers)]; // Remove duplicates
+        } else if (question.type === 'fill-in-blank') {
+          answers[index] = question.correctText || 'Sample answer';
+        } else if (question.type === 'long-answer') {
+          answers[index] = 'This is a sample long answer response that would require manual grading. The student has provided a detailed explanation that addresses some of the key points in the grading criteria, but may not be complete or fully accurate.';
+        } else if (question.type === 'matching') {
+          const matchingPairs = question.matchingPairs || [];
+          const userMatches: { [key: string]: string } = {};
+          matchingPairs.forEach(pair => {
+            userMatches[pair.left] = pair.right; // For simplicity, correct answers
+          });
+          answers[index] = userMatches;
+        } else if (question.type === 'ordering') {
+          answers[index] = [...(question.correctOrder || [])]; // For simplicity, correct order
+        }
+      });
+      
+      // Determine submission status
+      let status: 'needs_grading' | 'partially_graded' | 'graded' | 'passed' | 'failed';
+      
+      // Check if quiz has long answer questions
+      const hasLongAnswerQuestions = quizQuestions.some(q => q.type === 'long-answer');
+      
+      if (hasLongAnswerQuestions && i % 5 === 0) {
+        status = 'needs_grading';
+      } else if (hasLongAnswerQuestions && i % 7 === 0) {
+        status = 'partially_graded';
+      } else if (score >= quiz.passingScore) {
+        status = 'passed';
+      } else {
+        status = 'failed';
+      }
+      
+      // Add feedback for some results
+      const feedback: { [key: number]: string } = {};
+      const manualScores: { [key: number]: number } = {};
+      
+      if (status !== 'needs_grading') {
+        quizQuestions.forEach((question, index) => {
+          if (question.type === 'long-answer' && (status !== 'partially_graded' || Math.random() > 0.5)) {
+            feedback[index] = 'Good answer that covers most of the key points. You could improve by adding more specific examples.';
+            manualScores[index] = Math.floor(Math.random() * 3) + 3; // Score between 3-5
+          }
+        });
+      }
+      
+      // Add general feedback for some results
+      const generalFeedback = i % 3 === 0 ? 
+        "Overall good work. You've shown a solid understanding of the core concepts. Keep practicing the areas where you made mistakes." : 
+        undefined;
+      
+      mockAllResults.push({
+        id: `result-${i}`,
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        studentName: `Student ${i}`,
+        studentEmail: `student${i}@example.com`,
+        score: status === 'needs_grading' ? null : score,
+        totalQuestions: quizQuestions.length,
+        correctAnswers,
+        timeSpent: Math.floor(Math.random() * (quiz.timeLimit * 60 * 0.8)) + (quiz.timeLimit * 60 * 0.2), // Between 20%-100% of time limit
+        completedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last month
+        status,
+        answers,
+        category: quiz.category,
+        difficulty: quiz.difficulty,
+        feedback,
+        manualScores,
+        generalFeedback
+      });
+    }
+    
+    // Sort by date (newest first)
+    mockAllResults.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime());
+    
     setResults(mockAllResults);
   }, []);
-
-  useEffect(() => { document.title = 'All Quiz Results | Kuizzz'; }, []);
 
   const filteredResults = results.filter(result => {
     const matchesSearch = result.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,8 +153,9 @@ const AllResults: React.FC = () => {
                          result.quizTitle.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesQuiz = !filterQuiz || result.quizId === filterQuiz;
     const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'passed' && result.passed) ||
-                         (filterStatus === 'failed' && !result.passed);
+                         (filterStatus === 'passed' && result.status === 'passed') ||
+                         (filterStatus === 'failed' && result.status === 'failed') ||
+                         (filterStatus === 'needs_grading' && (result.status === 'needs_grading' || result.status === 'partially_graded'));
     const matchesCategory = !filterCategory || result.category === filterCategory;
     
     return matchesSearch && matchesQuiz && matchesStatus && matchesCategory;
@@ -195,7 +169,11 @@ const AllResults: React.FC = () => {
         comparison = a.completedAt.getTime() - b.completedAt.getTime();
         break;
       case 'score':
-        comparison = a.score - b.score;
+        // Handle null scores (for needs_grading)
+        if (a.score === null && b.score === null) comparison = 0;
+        else if (a.score === null) comparison = 1;
+        else if (b.score === null) comparison = -1;
+        else comparison = a.score - b.score;
         break;
       case 'name':
         comparison = a.studentName.localeCompare(b.studentName);
@@ -224,17 +202,19 @@ const AllResults: React.FC = () => {
     if (results.length === 0) return null;
     
     const totalAttempts = results.length;
-    const passedAttempts = results.filter(r => r.passed).length;
-    const averageScore = Math.round(results.reduce((sum, r) => sum + r.score, 0) / totalAttempts);
+    const passedAttempts = results.filter(r => r.status === 'passed').length;
+    const averageScore = Math.round(results.filter(r => r.score !== null).reduce((sum, r) => sum + (r.score || 0), 0) / results.filter(r => r.score !== null).length);
     const averageTime = Math.round(results.reduce((sum, r) => sum + r.timeSpent, 0) / totalAttempts);
     const passRate = Math.round((passedAttempts / totalAttempts) * 100);
+    const needsGrading = results.filter(r => r.status === 'needs_grading' || r.status === 'partially_graded').length;
     
     return {
       totalAttempts,
       passedAttempts,
       averageScore,
       averageTime,
-      passRate
+      passRate,
+      needsGrading
     };
   };
 
@@ -247,11 +227,11 @@ const AllResults: React.FC = () => {
         `"${result.studentEmail}"`,
         `"${result.quizTitle}"`,
         `"${result.category}"`,
-        result.score,
+        result.score !== null ? result.score : 'Pending',
         result.correctAnswers,
         result.totalQuestions,
         formatTime(result.timeSpent),
-        result.passed ? 'Passed' : 'Failed',
+        result.status,
         result.completedAt.toLocaleString()
       ].join(','))
     ].join('\n');
@@ -266,10 +246,17 @@ const AllResults: React.FC = () => {
   };
 
   const viewStudentAnswers = (result: QuizResult) => {
-    setSelectedResult(result);
+    // Navigate to the quiz results page with the specific student submission
+    navigate(`/quizzes/${result.quizId}/results`, { 
+      state: { 
+        selectedSubmissionId: result.id,
+        studentName: result.studentName,
+        studentEmail: result.studentEmail
+      } 
+    });
   };
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
       case 'easy': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
       case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
@@ -293,257 +280,56 @@ const AllResults: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Quiz Results</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive view of all quiz attempts and results</p>
-        </div>
-        <button
-              onClick={exportToCSV}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              title="Export all results as CSV"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export CSV</span>
-            </button>
-      </div>
-      
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-        {/* Overall Statistics */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 rounded-lg transition-colors">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">{stats.totalAttempts}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Attempts</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">{stats.passRate}%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Pass Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">{stats.averageScore}%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Avg Score</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">{formatTime(stats.averageTime)}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Avg Time</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">{stats.passedAttempts}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Passed</div>
-            </div>
-          </div>
-        )}
-      </div>
+      <ResultsHeader 
+        title="All Quiz Results"
+        subtitle="Comprehensive view of all quiz attempts and results"
+        onExport={exportToCSV}
+      />
+
+      {/* Overall Statistics */}
+      {stats && <ResultsStats stats={stats} formatTime={formatTime} />}
 
       {/* Filters and Search */}
-      <div className="transition-colors">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between ">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search students, quizzes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-              />
-            </div>
-            
-            
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500  transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              <span>Filters</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
-            <select
-              value={`${sortBy}-${sortOrder}`}
-              onChange={(e) => {
-                const [newSortBy, newSortOrder] = e.target.value.split('-');
-                setSortBy(newSortBy as 'date' | 'score' | 'name' | 'quiz');
-                setSortOrder(newSortOrder as 'asc' | 'desc');
-              }}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-            >
-              <option value="date-desc">Latest First</option>
-              <option value="date-asc">Oldest First</option>
-              <option value="score-desc">Highest Score</option>
-              <option value="score-asc">Lowest Score</option>
-              <option value="name-asc">Name A-Z</option>
-              <option value="name-desc">Name Z-A</option>
-              <option value="quiz-asc">Quiz A-Z</option>
-              <option value="quiz-desc">Quiz Z-A</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Expandable Filters */}
-        {showFilters && (
-          <div className="grid py-6 pt-10 grid-cols-1 md:grid-cols-4 gap-4 pt-4 ">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quiz</label>
-              <select
-                value={filterQuiz}
-                onChange={(e) => setFilterQuiz(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-              >
-                <option value="">All Quizzes</option>
-                {uniqueQuizzes.map(quiz => (
-                  <option key={quiz.id} value={quiz.id}>{quiz.title}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-              >
-                <option value="">All Categories</option>
-                {uniqueCategories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as 'all' | 'passed' | 'failed')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-              >
-                <option value="all">All Results</option>
-                <option value="passed">Passed Only</option>
-                <option value="failed">Failed Only</option>
-              </select>
-            </div>
-            
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setFilterQuiz('');
-                  setFilterCategory('');
-                  setFilterStatus('all');
-                  setSearchTerm('');
-                }}
-                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                Clear Filters
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <ResultsFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+        filterQuiz={filterQuiz}
+        onFilterQuizChange={setFilterQuiz}
+        filterCategory={filterCategory}
+        onFilterCategoryChange={setFilterCategory}
+        filterStatus={filterStatus}
+        onFilterStatusChange={setFilterStatus}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(newSortBy, newSortOrder) => {
+          setSortBy(newSortBy as 'date' | 'score' | 'name' | 'quiz');
+          setSortOrder(newSortOrder as 'asc' | 'desc');
+        }}
+        onClearFilters={() => {
+          setFilterQuiz('');
+          setFilterCategory('');
+          setFilterStatus('all');
+          setSearchTerm('');
+        }}
+        uniqueQuizzes={uniqueQuizzes}
+        uniqueCategories={uniqueCategories}
+      />
 
       {/* Results Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-              <tr>
-                <th className="text-left py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Student</th>
-                <th className="text-left py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Quiz</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Score</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Correct</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Time</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Status</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Completed</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700 dark:text-gray-300">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedResults.map((result) => (
-                <tr key={result.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td className="py-4 px-6">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{result.studentName}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{result.studentEmail}</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{result.quizTitle}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{result.category}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(result.difficulty)}`}>
-                          {result.difficulty}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className={`text-lg font-bold ${
-                        result.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {result.score}%
-                      </span>
-                      {result.score >= 90 ? (
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                      ) : result.score < 60 ? (
-                        <TrendingDown className="w-4 h-4 text-red-500" />
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <span className="text-gray-900 dark:text-white">
-                      {result.correctAnswers}/{result.totalQuestions}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {formatTime(result.timeSpent)}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      result.passed 
-                        ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400'
-                        : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'
-                    }`}>
-                      {result.passed ? 'Passed' : 'Failed'}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      <div>{result.completedAt.toLocaleDateString()}</div>
-                      <div>{result.completedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <div className="flex items-center justify-center space-x-2">
-                      <button
-                        onClick={() => viewStudentAnswers(result)}
-                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        title="View student answers"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => navigate(`/quizzes/${result.quizId}/results`)}
-                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-                        title="View quiz results"
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {sortedResults.length > 0 ? (
+        <ResultsTable
+          results={paginatedResults}
+          onViewResult={viewStudentAnswers}
+          getDifficultyColor={getDifficultyColor}
+          formatTime={formatTime}
+        />
+      ) : (
+        <EmptyResultsState 
+          hasFilters={!!searchTerm || filterQuiz !== '' || filterStatus !== 'all' || filterCategory !== ''}
+        />
+      )}
 
       {/* Pagination */}
       <div className="flex justify-between items-center">
@@ -579,65 +365,6 @@ const AllResults: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300">per page</span>
         </div>
       </div>
-
-      {/* Student Answers Modal */}
-      {selectedResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Student Answers</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedResult.studentName} - {selectedResult.quizTitle} - Score: {selectedResult.score}%
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedResult(null)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Close"
-                >
-                  <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              <div className="text-center py-8">
-                <FileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Detailed Answer Review</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  This feature would show the detailed breakdown of each question and the student's answers.
-                </p>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-left max-w-md mx-auto">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Summary:</h4>
-                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <li>• Score: {selectedResult.score}%</li>
-                    <li>• Correct: {selectedResult.correctAnswers}/{selectedResult.totalQuestions}</li>
-                    <li>• Time: {formatTime(selectedResult.timeSpent)}</li>
-                    <li>• Status: {selectedResult.passed ? 'Passed' : 'Failed'}</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {sortedResults.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BarChart3 className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No results found</h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            {searchTerm || filterQuiz || filterStatus !== 'all' || filterCategory
-              ? 'Try adjusting your search or filter criteria.'
-              : 'No quiz results available yet.'}
-          </p>
-        </div>
-      )}
     </div>
   );
 };

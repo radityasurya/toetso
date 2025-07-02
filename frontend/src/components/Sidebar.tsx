@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -7,8 +7,12 @@ import {
   BarChart3, 
   Settings,
   Tag,
-  ClipboardList
+  ClipboardList,
+  Users,
+  GraduationCap,
+  BookOpen
 } from 'lucide-react';
+import { settingsApi } from '../api';
 
 interface SidebarProps {
   onSidebarClose: () => void;
@@ -17,16 +21,69 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onSidebarClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [siteSettings, setSiteSettings] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('admin');
 
-  const menuItems = [
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await settingsApi.getSettings();
+        setSiteSettings(settings);
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    };
+
+    fetchSettings();
+    
+    // Get user role from localStorage
+    const role = localStorage.getItem('userRole') || 'admin';
+    setUserRole(role);
+  }, []);
+
+  // Base menu items that everyone sees
+  const baseMenuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', color: 'text-blue-500' },
     { path: '/categories', icon: Tag, label: 'Categories', color: 'text-indigo-500' },
+  ];
+  
+  // Admin-specific menu items
+  const adminMenuItems = [
+    { path: '/users', icon: Users, label: 'All Users', color: 'text-purple-500' },
+  ];
+  
+  // Teacher-specific menu items
+  const teacherMenuItems = [
+    { path: '/users', icon: BookOpen, label: 'My Students', color: 'text-purple-500' },
+  ];
+  
+  // Student-specific menu items
+  const studentMenuItems = [
+    { path: '/users', icon: GraduationCap, label: 'My Teachers', color: 'text-purple-500' },
+  ];
+  
+  // Common menu items for the bottom of the list
+  const commonMenuItems = [
     { path: '/questions', icon: HelpCircle, label: 'Questions', color: 'text-green-500' },
     { path: '/quizzes', icon: FileText, label: 'Quizzes', color: 'text-purple-500' },
     { path: '/results', icon: ClipboardList, label: 'All Results', color: 'text-cyan-500' },
     { path: '/analytics', icon: BarChart3, label: 'Analytics', color: 'text-orange-500' },
     { path: '/settings', icon: Settings, label: 'Settings', color: 'text-gray-500' },
   ];
+
+  // Combine menu items based on user role
+  let menuItems = [...baseMenuItems];
+  
+  if (userRole === 'admin') {
+    menuItems = [...menuItems, ...adminMenuItems];
+  } else if (userRole === 'teacher') {
+    menuItems = [...menuItems, ...teacherMenuItems];
+  } else if (userRole === 'student') {
+    menuItems = [...menuItems, ...studentMenuItems];
+  }
+  
+  // Add common items at the end
+  menuItems = [...menuItems, ...commonMenuItems];
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -68,7 +125,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSidebarClose }) => {
       </nav>
       
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-4 text-white">
+        <div 
+          className="rounded-lg p-4 text-white"
+          style={{ 
+            background: `linear-gradient(to right, ${siteSettings?.primaryColor || '#3B82F6'}, ${siteSettings?.primaryColor ? adjustColor(siteSettings.primaryColor, 40) : '#8B5CF6'})` 
+          }}
+        >
           <h3 className="font-semibold text-sm">Need Help?</h3>
           <p className="text-xs opacity-90 mt-1">Check our documentation</p>
           <button className="mt-2 text-xs bg-white bg-opacity-20 px-3 py-1 rounded hover:bg-opacity-30 transition-all">
@@ -79,5 +141,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onSidebarClose }) => {
     </div>
   );
 };
+
+// Helper function to adjust color brightness
+function adjustColor(color: string, amount: number): string {
+  // Remove the # if it exists
+  color = color.replace('#', '');
+  
+  // Parse the color
+  let r = parseInt(color.substring(0, 2), 16);
+  let g = parseInt(color.substring(2, 4), 16);
+  let b = parseInt(color.substring(4, 6), 16);
+  
+  // Adjust the color
+  r = Math.min(255, Math.max(0, r + amount));
+  g = Math.min(255, Math.max(0, g + amount));
+  b = Math.min(255, Math.max(0, b + amount));
+  
+  // Convert back to hex
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
 
 export default Sidebar;

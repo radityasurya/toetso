@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { User, Mail, BookOpen, Clock, Target, Users, AlertCircle, CheckCircle, Play } from 'lucide-react';
 import { Quiz } from '../../types';
 import { mockQuizzes } from '../../data/mockData';
+import { settingsApi } from '../../api';
+import MembershipPlans from './components/MembershipPlans';
 
 const StudentQuizEntry: React.FC = () => {
   const { id } = useParams();
@@ -14,6 +16,9 @@ const StudentQuizEntry: React.FC = () => {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showMembershipPlans, setShowMembershipPlans] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [siteSettings, setSiteSettings] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -25,6 +30,23 @@ const StudentQuizEntry: React.FC = () => {
         setQuiz(null);
       }
     }
+    
+    // Fetch site settings
+    const fetchSettings = async () => {
+      try {
+        const settings = await settingsApi.getSettings();
+        setSiteSettings(settings);
+        
+        // Show membership plans if enabled
+        if (settings.membershipEnabled) {
+          setShowMembershipPlans(false); // Set to false by default, user can opt-in
+        }
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    };
+    
+    fetchSettings();
   }, [id]);
 
   const validateForm = () => {
@@ -49,6 +71,11 @@ const StudentQuizEntry: React.FC = () => {
       }
     }
 
+    // Membership validation - only if plans are shown and user has selected to view them
+    if (showMembershipPlans && !selectedPlan) {
+      newErrors.membership = 'Please select a membership plan';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -57,6 +84,13 @@ const StudentQuizEntry: React.FC = () => {
     setStudentInfo({ ...studentInfo, [field]: value });
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
+    }
+  };
+
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlan(planId);
+    if (errors.membership) {
+      setErrors({ ...errors, membership: '' });
     }
   };
 
@@ -71,6 +105,10 @@ const StudentQuizEntry: React.FC = () => {
         // Store student info in localStorage for the quiz session
         localStorage.setItem('studentInfo', JSON.stringify(studentInfo));
         localStorage.setItem('quizStartTime', new Date().toISOString());
+        
+        if (selectedPlan) {
+          localStorage.setItem('selectedPlan', selectedPlan);
+        }
         
         // Navigate to quiz taking interface
         navigate(`/quiz/${id}/take`);
@@ -115,12 +153,12 @@ const StudentQuizEntry: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center" style={{ backgroundColor: siteSettings?.primaryColor || '#3B82F6' }}>
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Kuizzz</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Theory Exam Platform</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{siteSettings?.siteName || 'toet'}</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{siteSettings?.siteDescription || 'Theory Exam Platform'}</p>
             </div>
           </div>
         </div>
@@ -238,6 +276,54 @@ const StudentQuizEntry: React.FC = () => {
                 )}
               </div>
 
+              {/* Membership Plan Option */}
+              {siteSettings?.membershipEnabled && (
+                <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-blue-900 dark:text-blue-300">Membership Plans</h4>
+                    <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
+                      Get access to premium features and unlimited quizzes
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMembershipPlans(!showMembershipPlans)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    {showMembershipPlans ? 'Hide Plans' : 'View Plans'}
+                  </button>
+                </div>
+              )}
+
+              {/* Membership Plans */}
+              {showMembershipPlans && siteSettings?.membershipPlans && (
+                <div>
+                  <MembershipPlans 
+                    plans={siteSettings.membershipPlans}
+                    onSelectPlan={handleSelectPlan}
+                    selectedPlan={selectedPlan}
+                  />
+                  
+                  {errors.membership && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                      <p className="text-sm text-red-600 dark:text-red-400">{errors.membership}</p>
+                    </div>
+                  )}
+                  
+                  {siteSettings.offerFreeTrial && (
+                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                        <p className="text-sm text-green-800 dark:text-green-300">
+                          All plans include a {siteSettings.trialPeriod}-day free trial. No payment required today.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Privacy Notice */}
               <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors">
                 <div className="flex items-start space-x-2">
@@ -257,6 +343,7 @@ const StudentQuizEntry: React.FC = () => {
                 type="submit"
                 disabled={isLoading}
                 className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: siteSettings?.primaryColor || '#3B82F6' }}
               >
                 {isLoading ? (
                   <>

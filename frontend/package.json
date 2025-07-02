@@ -16,6 +16,7 @@
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^6.20.1",
+    "react-simple-wysiwyg": "^2.2.5",
     "shared": "^0.2.0"
   },
   "devDependencies": {

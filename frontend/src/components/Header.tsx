@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, Menu, Settings, LogOut, UserCircle, HelpCircle, ChevronDown, BookOpen, Sun, Moon, Monitor, ChevronRight, FileText, Tag, BarChart3 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { settingsApi } from '../api';
 
 interface HeaderProps {
   onAddNew: () => void;
@@ -35,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<any>(null);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
@@ -91,6 +93,19 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
   ];
 
   const currentTheme = themes.find(t => t.value === theme);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await settingsApi.getSettings();
+        setSiteSettings(settings);
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   // Mock search results
   const mockSearchResults: SearchResult[] = [
@@ -201,17 +216,18 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
     setShowThemeMenu(false);
     switch (action) {
       case 'profile':
-        navigate('/profile/me');
+        navigate('/profile');
         break;
       case 'settings':
         navigate('/settings');
         break;
       case 'help':
-        window.open('/dashboard', '_blank');
+        // Open help documentation
+        console.log('Open help');
         break;
       case 'logout':
-        // Remove token/session and redirect to login
-        localStorage.removeItem('access_token');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userEmail');
         navigate('/login');
         break;
     }
@@ -264,6 +280,9 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
     }
   };
 
+  // Get user email from localStorage
+  const userEmail = localStorage.getItem('userEmail') || 'admin@quizmaster.com';
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 transition-colors h-16 flex items-center w-full">
       <div className="flex items-center justify-between w-full max-w-none">
@@ -282,11 +301,11 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
             onClick={handleLogoClick}
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity group"
           >
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors" style={{ backgroundColor: siteSettings?.primaryColor || '#3B82F6' }}>
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Kuizzz</h1>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{siteSettings?.siteName || 'toet'}</h1>
             </div>
           </button>
         </div>
@@ -480,7 +499,7 @@ const Header: React.FC<HeaderProps> = ({ onAddNew, onMenuClick }) => {
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">Admin User</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">admin@quizmaster.com</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{userEmail}</p>
                 </div>
                 
                 <div className="py-1">

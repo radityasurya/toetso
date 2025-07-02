@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Search, Check, X, ChevronUp, ChevronDown, HelpCircle, Home, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, HelpCircle } from 'lucide-react';
 import { Quiz, Question } from '../../types';
 import { categories, mockQuestions, mockQuizzes } from '../../data/mockData';
 import LoadingSpinner from '../Common/LoadingSpinner';
+import Editor from 'react-simple-wysiwyg';
+
+// Import components
+import SelectedQuestionList from './components/SelectedQuestionList';
+import AvailableQuestionList from './components/AvailableQuestionList';
+import NewQuestionForm from './components/NewQuestionForm';
 
 const QuizForm: React.FC = () => {
   const navigate = useNavigate();
@@ -27,16 +32,8 @@ const QuizForm: React.FC = () => {
   const [showNewQuestionForm, setShowNewQuestionForm] = useState(false);
   const [questionSearch, setQuestionSearch] = useState('');
   const [selectedQuestionCategory, setSelectedQuestionCategory] = useState('');
-
-  // New question form state
-  const [newQuestion, setNewQuestion] = useState({
-    question: '',
-    options: ['', '', '', ''],
-    correctAnswer: 0,
-    explanation: '',
-    category: '',
-    difficulty: 'medium' as 'easy' | 'medium' | 'hard',
-  });
+  const [selectedQuestionType, setSelectedQuestionType] = useState('');
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     if (isEditing && id) {
@@ -56,6 +53,10 @@ const QuizForm: React.FC = () => {
             difficulty: existingQuiz.difficulty,
             isActive: existingQuiz.isActive,
           });
+          
+          // Load selected questions
+          const quizQuestions = mockQuestions.filter(q => existingQuiz.questions.includes(q.id));
+          setSelectedQuestions(quizQuestions);
         } else {
           navigate('/quizzes');
         }
@@ -64,18 +65,16 @@ const QuizForm: React.FC = () => {
     }
   }, [id, isEditing, navigate]);
 
+  // Filter available questions (not already selected)
   const availableQuestions = mockQuestions.filter(question => {
     const matchesSearch = question.question.toLowerCase().includes(questionSearch.toLowerCase()) ||
                          question.category.toLowerCase().includes(questionSearch.toLowerCase());
     const matchesCategory = !selectedQuestionCategory || question.category === selectedQuestionCategory;
+    const matchesType = !selectedQuestionType || question.type === selectedQuestionType;
     const notAlreadySelected = !formData.questions.includes(question.id);
     
-    return matchesSearch && matchesCategory && notAlreadySelected;
+    return matchesSearch && matchesCategory && matchesType && notAlreadySelected;
   });
-
-  const selectedQuestions = mockQuestions.filter(question => 
-    formData.questions.includes(question.id)
-  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,10 +113,15 @@ const QuizForm: React.FC = () => {
   };
 
   const addQuestion = (questionId: string) => {
+    const question = mockQuestions.find(q => q.id === questionId);
+    if (!question) return;
+    
     setFormData({
       ...formData,
       questions: [...formData.questions, questionId]
     });
+    
+    setSelectedQuestions([...selectedQuestions, question]);
   };
 
   const removeQuestion = (questionId: string) => {
@@ -125,57 +129,59 @@ const QuizForm: React.FC = () => {
       ...formData,
       questions: formData.questions.filter(id => id !== questionId)
     });
+    
+    setSelectedQuestions(selectedQuestions.filter(q => q.id !== questionId));
+  };
+
+  const reorderQuestions = (newOrder: Question[]) => {
+    setSelectedQuestions(newOrder);
+    setFormData({
+      ...formData,
+      questions: newOrder.map(q => q.id)
+    });
   };
 
   const moveQuestion = (questionId: string, direction: 'up' | 'down') => {
-    const currentIndex = formData.questions.indexOf(questionId);
+    const currentIndex = selectedQuestions.findIndex(q => q.id === questionId);
     if (
       (direction === 'up' && currentIndex === 0) ||
-      (direction === 'down' && currentIndex === formData.questions.length - 1)
+      (direction === 'down' && currentIndex === selectedQuestions.length - 1) ||
+      currentIndex === -1
     ) {
       return;
     }
 
-    const newQuestions = [...formData.questions];
+    const newQuestions = [...selectedQuestions];
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     // Swap the questions
     [newQuestions[currentIndex], newQuestions[newIndex]] = 
     [newQuestions[newIndex], newQuestions[currentIndex]];
     
-    setFormData({ ...formData, questions: newQuestions });
+    reorderQuestions(newQuestions);
   };
 
-  const handleNewQuestionSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newQuestion.question.trim()) {
-      alert('Please enter a question');
-      return;
-    }
-    
-    if (newQuestion.options.some(option => !option.trim())) {
-      alert('Please fill in all answer options');
-      return;
-    }
-    
-    if (!newQuestion.category) {
-      alert('Please select a category');
-      return;
-    }
-
+  const handleCreateQuestion = (newQuestionData: Partial<Question>) => {
     // Create new question (in real app, this would be saved to backend)
     const questionId = Date.now().toString();
     const createdQuestion: Question = {
       id: questionId,
-      question: newQuestion.question,
-      options: newQuestion.options.filter(opt => opt.trim()),
-      correctAnswer: newQuestion.correctAnswer,
-      explanation: newQuestion.explanation,
-      category: newQuestion.category,
-      difficulty: newQuestion.difficulty,
+      question: newQuestionData.question || '',
+      type: newQuestionData.type || 'multiple-choice',
+      options: newQuestionData.type !== 'fill-in-blank' ? newQuestionData.options?.filter(opt => opt.trim()) : undefined,
+      correctAnswer: newQuestionData.type === 'multiple-choice' ? newQuestionData.correctAnswer : undefined,
+      correctAnswers: newQuestionData.type === 'multiple-answer' ? newQuestionData.correctAnswers : undefined,
+      correctText: newQuestionData.type === 'fill-in-blank' ? newQuestionData.correctText : undefined,
+      matchingPairs: newQuestionData.type === 'matching' ? newQuestionData.matchingPairs : undefined,
+      correctOrder: newQuestionData.type === 'ordering' ? newQuestionData.correctOrder : undefined,
+      explanation: newQuestionData.explanation || '',
+      category: newQuestionData.category || '',
+      difficulty: newQuestionData.difficulty || 'medium',
       createdAt: new Date(),
       updatedAt: new Date(),
+      requiresManualGrading: newQuestionData.type === 'long-answer',
+      gradingCriteria: newQuestionData.type === 'long-answer' ? newQuestionData.gradingCriteria : undefined,
+      maxScore: newQuestionData.type === 'long-answer' ? newQuestionData.maxScore : undefined,
     };
 
     // Add to mock data (in real app, this would be handled by backend)
@@ -186,50 +192,20 @@ const QuizForm: React.FC = () => {
       ...formData,
       questions: [...formData.questions, questionId]
     });
+    
+    setSelectedQuestions([...selectedQuestions, createdQuestion]);
 
     // Reset form
-    setNewQuestion({
-      question: '',
-      options: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: '',
-      category: formData.category, // Pre-fill with quiz category
-      difficulty: 'medium',
-    });
-
     setShowNewQuestionForm(false);
-    alert('Question created and added to quiz!');
   };
 
-  const handleNewQuestionOptionChange = (index: number, value: string) => {
-    const newOptions = [...newQuestion.options];
-    newOptions[index] = value;
-    setNewQuestion({ ...newQuestion, options: newOptions });
-  };
-
-  const addNewQuestionOption = () => {
-    if (newQuestion.options.length < 6) {
-      setNewQuestion({ 
-        ...newQuestion, 
-        options: [...newQuestion.options, ''] 
-      });
-    }
-  };
-
-  const removeNewQuestionOption = (index: number) => {
-    if (newQuestion.options.length > 2) {
-      const newOptions = newQuestion.options.filter((_, i) => i !== index);
-      setNewQuestion({ 
-        ...newQuestion, 
-        options: newOptions,
-        correctAnswer: newQuestion.correctAnswer >= newOptions.length ? 0 : newQuestion.correctAnswer
-      });
-    }
+  const handleDescriptionChange = (e: any) => {
+    setFormData({ ...formData, description: e.target.value });
   };
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto">
+      <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
@@ -239,9 +215,14 @@ const QuizForm: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {isEditing ? 'Edit Quiz' : 'Create New Quiz'}
-              </h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {isEditing ? 'Edit Quiz' : 'Create New Quiz'}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configure quiz settings and select questions
+                </p>
+              </div>
             </div>
           </div>
           <div className="p-6">
@@ -299,11 +280,12 @@ const QuizForm: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description
                 </label>
-                <textarea
+                <Editor
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
+                  onChange={handleDescriptionChange}
+                  containerProps={{
+                    className: "w-full min-h-[100px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
+                  }}
                   placeholder="Describe what this quiz covers..."
                 />
               </div>
@@ -409,295 +391,39 @@ const QuizForm: React.FC = () => {
 
                 {/* New Question Form */}
                 {showNewQuestionForm && (
-                  <div className="mb-6 p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20 transition-colors">
-                    <h4 className="text-sm font-medium text-green-800 dark:text-green-300 mb-4">Create New Question</h4>
-                    <form onSubmit={handleNewQuestionSubmit} className="space-y-4">
-                      <div>
-                        <input
-                          type="text"
-                          value={newQuestion.question}
-                          onChange={(e) => setNewQuestion({ ...newQuestion, question: e.target.value })}
-                          placeholder="Enter question text..."
-                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <select
-                          value={newQuestion.category}
-                          onChange={(e) => setNewQuestion({ ...newQuestion, category: e.target.value })}
-                          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors"
-                          required
-                        >
-                          <option value="">Category</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.name}>{cat.name}</option>
-                          ))}
-                        </select>
-                        
-                        <select
-                          value={newQuestion.difficulty}
-                          onChange={(e) => setNewQuestion({ ...newQuestion, difficulty: e.target.value as 'easy' | 'medium' | 'hard' })}
-                          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors"
-                        >
-                          <option value="easy">Easy</option>
-                          <option value="medium">Medium</option>
-                          <option value="hard">Hard</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-2">
-                        {newQuestion.options.map((option, index) => (
-                          <div key={index} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              name="newQuestionCorrect"
-                              checked={newQuestion.correctAnswer === index}
-                              onChange={() => setNewQuestion({ ...newQuestion, correctAnswer: index })}
-                              className="w-3 h-3 text-green-600 focus:ring-green-500"
-                            />
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-4">
-                              {String.fromCharCode(65 + index)}.
-                            </span>
-                            <input
-                              type="text"
-                              value={option}
-                              onChange={(e) => handleNewQuestionOptionChange(index, e.target.value)}
-                              placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                              className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                              required
-                            />
-                            {newQuestion.options.length > 2 && (
-                              <button
-                                type="button"
-                                onClick={() => removeNewQuestionOption(index)}
-                                className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                        {newQuestion.options.length < 6 && (
-                          <button
-                            type="button"
-                            onClick={addNewQuestionOption}
-                            className="text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
-                          >
-                            + Add Option
-                          </button>
-                        )}
-                      </div>
-
-                      <div>
-                        <textarea
-                          value={newQuestion.explanation}
-                          onChange={(e) => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
-                          placeholder="Explanation (optional)..."
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                        />
-                      </div>
-
-                      <div className="flex space-x-2">
-                        <button
-                          type="submit"
-                          className="flex items-center space-x-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>Create & Add</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowNewQuestionForm(false)}
-                          className="px-3 py-1 text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 text-sm rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
+                  <div className="mb-6">
+                    <NewQuestionForm 
+                      onCreateQuestion={handleCreateQuestion}
+                      onCancel={() => setShowNewQuestionForm(false)}
+                      defaultCategory={formData.category}
+                    />
                   </div>
                 )}
 
                 {/* Question Selector */}
                 {showQuestionSelector && (
-                  <div className="mb-6 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 transition-colors">
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mb-4">
-                      <div className="relative flex-1">
-                        <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                        <input
-                          type="text"
-                          placeholder="Search questions..."
-                          value={questionSearch}
-                          onChange={(e) => setQuestionSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                        />
-                      </div>
-                      <select
-                        value={selectedQuestionCategory}
-                        onChange={(e) => setSelectedQuestionCategory(e.target.value)}
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors"
-                      >
-                        <option value="">All Categories</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.name}>{cat.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      {availableQuestions.map(question => (
-                        <div 
-                          key={question.id} 
-                          onClick={() => addQuestion(question.id)}
-                          className="flex items-start justify-between p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 cursor-pointer transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{question.question}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{question.category} • {question.difficulty}</p>
-                          </div>
-                          <div className="ml-2 p-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300">
-                            <Plus className="w-4 h-4" />
-                          </div>
-                        </div>
-                      ))}
-                      {availableQuestions.length === 0 && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No questions available</p>
-                      )}
-                    </div>
-                  </div>
+                  <AvailableQuestionList
+                    availableQuestions={availableQuestions}
+                    onAddQuestion={addQuestion}
+                    searchTerm={questionSearch}
+                    onSearchChange={setQuestionSearch}
+                    selectedCategory={selectedQuestionCategory}
+                    onCategoryChange={setSelectedQuestionCategory}
+                    selectedType={selectedQuestionType}
+                    onTypeChange={setSelectedQuestionType}
+                  />
                 )}
 
-
                 {/* Selected Questions */}
-                <div className="space-y-3">
-                  <div className="flex justify-end mb-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Fisher-Yates shuffle
-                        const shuffled = Array.from(formData.questions);
-                        for (let i = shuffled.length - 1; i > 0; i--) {
-                          const j = Math.floor(Math.random() * (i + 1));
-                          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                        }
-                        setFormData({
-                          ...formData,
-                          questions: shuffled,
-                        });
-                      }}
-                      className="flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-white border border-blue-300 dark:border-blue-700 rounded px-2 py-1 ml-2 gap-1"
-                      title="Shuffle Questions"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4l6.586 6.586a2 2 0 002.828 0l1.586-1.586a2 2 0 012.828 0L20 16m0 0l-6 6m6-6H10" /></svg>
-                      Shuffle
-                    </button>
-                  </div>
-                  <DragDropContext
-                    onDragEnd={({ source, destination }) => {
-                      if (!destination || source.index === destination.index) return;
-                      const reordered = Array.from(formData.questions);
-                      const [removed] = reordered.splice(source.index, 1);
-                      reordered.splice(destination.index, 0, removed);
-                      setFormData({
-                        ...formData,
-                        questions: reordered,
-                      });
-                    }}
-                  >
-                    <Droppable droppableId="questions-droppable">
-                      {(provided) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          className="space-y-3"
-                        >
-                          {formData.questions.map((questionId, index) => {
-                            const question = mockQuestions.find(q => q.id === questionId);
-                            if (!question) return null;
-                            return (
-                              <Draggable
-                                draggableId={String(question.id)}
-                                index={index}
-                                key={question.id}
-                              >
-                                {(dragProvided, dragSnapshot) => (
-                                  <div
-                                    ref={dragProvided.innerRef}
-                                    {...dragProvided.draggableProps}
-                                    {...dragProvided.dragHandleProps}
-                                  style={dragProvided.draggableProps.style}
-                                  className={
-                                    "flex items-start space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors"+
-                                    (dragSnapshot.isDragging ? " ring-2 ring-blue-400 dark:ring-blue-300" : "")
-                                  }
-                                >
-                                  <div className="flex flex-col space-y-1 items-center justify-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => moveQuestion(question.id, 'up')}
-                                      disabled={index === 0}
-                                      className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
-                                      title="Move up"
-                                      tabIndex={-1}
-                                    >
-                                      <ChevronUp className="w-4 h-4" />
-                                    </button>
-                                    <span
-                                      className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab"
-                                      title="Drag to reorder"
-                                    >
-                                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.5" fill="currentColor" /><circle cx="13" cy="5" r="1.5" fill="currentColor" /><circle cx="7" cy="10" r="1.5" fill="currentColor" /><circle cx="13" cy="10" r="1.5" fill="currentColor" /><circle cx="7" cy="15" r="1.5" fill="currentColor" /><circle cx="13" cy="15" r="1.5" fill="currentColor" /></svg>
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => moveQuestion(question.id, 'down')}
-                                      disabled={index === formData.questions.length - 1}
-                                      className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
-                                      title="Move down"
-                                      tabIndex={-1}
-                                    >
-                                      <ChevronDown className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center space-x-2 mb-1">
-                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Q{index + 1}</span>
-                                        <span className="text-xs text-blue-600 dark:text-blue-400">{question.category}</span>
-                                        <span className="text-xs text-blue-600 dark:text-blue-400">•</span>
-                                        <span className="text-xs text-blue-600 dark:text-blue-400">{question.difficulty}</span>
-                                      </div>
-                                      <p className="text-sm text-gray-900 dark:text-white">{question.question}</p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeQuestion(question.id)}
-                                      className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                )}
-                              </Draggable>
-                            );
-                          })}
-                          {provided.placeholder}
-                          {formData.questions.length === 0 && (
-                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                              <p className="text-sm">No questions added yet</p>
-                              <p className="text-xs">Click on questions above or create new ones to get started</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                </div>
+                <SelectedQuestionList
+                  selectedQuestions={selectedQuestions}
+                  onRemoveQuestion={removeQuestion}
+                  onReorderQuestions={reorderQuestions}
+                  onMoveQuestion={moveQuestion}
+                />
               </div>
             </div>
           </div>
-
 
           {/* Form Actions */}
           <div className="flex justify-end space-x-4 pt-6 mt-8 border-t border-gray-200 dark:border-gray-700">

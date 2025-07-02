@@ -1,45 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Target, User, BookOpen, RotateCcw, Home, Award, AlertTriangle } from 'lucide-react';
+import { 
+  BookOpen, 
+  RotateCcw, 
+  Home, 
+  ChevronDown, 
+  ChevronUp, 
+  Eye,
+  TrendingUp,
+  TrendingDown
+} from 'lucide-react';
+import { mockQuestions, mockQuizzes } from '../../data/mockData';
+
+// Import shared components
+import QuestionDisplay from '../Common/QuizComponents/QuestionDisplay';
+import QuizResultsSummary from '../Common/QuizComponents/QuizResultsSummary';
 
 const StudentQuizResults: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [results, setResults] = useState<any>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     const storedResults = localStorage.getItem('quizResults');
     if (storedResults) {
-      setResults(JSON.parse(storedResults));
+      const parsedResults = JSON.parse(storedResults);
+      setResults(parsedResults);
+      
+      // Get the quiz questions for review
+      if (id) {
+        const quiz = mockQuizzes.find(q => q.id === id);
+        if (quiz) {
+          const questions = mockQuestions.filter(q => quiz.questions.includes(q.id));
+          setQuizQuestions(questions);
+        }
+      }
     } else {
       // No results found, redirect to quiz entry
       navigate(`/quiz/${id}`);
     }
   }, [id, navigate]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
-  const getScoreColor = (score: number, passingScore: number) => {
-    if (score >= passingScore) {
-      return 'text-green-600 dark:text-green-400';
-    }
-    return 'text-red-600 dark:text-red-400';
-  };
-
-  const getGradeMessage = (passed: boolean, autoSubmit: boolean) => {
-    if (autoSubmit) {
-      return passed 
-        ? "Congratulations! You passed even though time expired."
-        : "Time expired, but don't worry - you can improve with practice.";
-    }
-    return passed 
-      ? "Excellent work! You've successfully passed the quiz."
-      : "Keep practicing! You're on the right track.";
-  };
 
   if (!results) {
     return (
@@ -51,6 +53,12 @@ const StudentQuizResults: React.FC = () => {
       </div>
     );
   }
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -71,83 +79,78 @@ const StudentQuizResults: React.FC = () => {
 
       <div className="max-w-4xl mx-auto p-4 py-8">
         {/* Results Summary */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 mb-6 transition-colors">
-          {/* Student Info */}
-          <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{results.studentInfo.name}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{results.studentInfo.email}</p>
-            </div>
-          </div>
+        <QuizResultsSummary 
+          score={results.score}
+          passingScore={70} // This should ideally come from the quiz data
+          correctAnswers={results.correctAnswers}
+          totalQuestions={results.totalQuestions}
+          timeSpent={results.timeSpent}
+          passed={results.passed}
+          autoSubmit={results.autoSubmit}
+          requiresGrading={results.requiresGrading}
+          gradingStatus={results.gradingStatus}
+          studentName={results.studentInfo.name}
+          studentEmail={results.studentInfo.email}
+        />
 
-          {/* Score Display */}
-          <div className="text-center mb-8">
-            <div className={`w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center ${
-              results.passed ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'
-            }`}>
-              {results.passed ? (
-                <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
-              ) : (
-                <XCircle className="w-12 h-12 text-red-600 dark:text-red-400" />
-              )}
+        {/* Review Questions Button */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors">
+          <button
+            onClick={() => setShowReview(!showReview)}
+            className="w-full flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+          >
+            <div className="flex items-center space-x-2">
+              <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-medium text-blue-700 dark:text-blue-300">
+                {showReview ? 'Hide Question Review' : 'Review All Questions'}
+              </span>
             </div>
-            
-            <h3 className={`text-3xl font-bold mb-2 ${getScoreColor(results.score, 70)}`}>
-              {results.score}%
-            </h3>
-            
-            <p className={`text-lg font-semibold mb-2 ${
-              results.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-            }`}>
-              {results.passed ? 'PASSED' : 'NOT PASSED'}
-            </p>
-            
-            <p className="text-gray-600 dark:text-gray-400">
-              {getGradeMessage(results.passed, results.autoSubmit)}
-            </p>
-
-            {results.autoSubmit && (
-              <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                <div className="flex items-center justify-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  <span className="text-sm text-orange-800 dark:text-orange-300">
-                    Quiz was automatically submitted when time expired
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Detailed Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 text-center transition-colors">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{results.score}%</div>
-              <div className="text-sm text-blue-800 dark:text-blue-300">Final Score</div>
-            </div>
-            
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-6 text-center transition-colors">
-              <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-                {results.correctAnswers}/{results.totalQuestions}
-              </div>
-              <div className="text-sm text-green-800 dark:text-green-300">Correct Answers</div>
-            </div>
-            
-            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6 text-center transition-colors">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">70%</div>
-              <div className="text-sm text-purple-800 dark:text-purple-300">Required to Pass</div>
-            </div>
-            
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-6 text-center transition-colors">
-              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
-                {formatTime(results.timeSpent)}
-              </div>
-              <div className="text-sm text-orange-800 dark:text-orange-300">Time Spent</div>
-            </div>
-          </div>
+            {showReview ? 
+              <ChevronUp className="w-5 h-5 text-blue-600 dark:text-blue-400" /> : 
+              <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            }
+          </button>
         </div>
+
+        {/* Question Review Section */}
+        {showReview && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Question Review</h3>
+            
+            <div className="space-y-8">
+              {quizQuestions.map((question, index) => {
+                const userAnswer = results.answers[index];
+                const isPendingGrading = question.type === 'long-answer';
+                const feedback = results.feedback?.[index];
+                const manualScore = results.manualScores?.[index];
+                
+                return (
+                  <QuestionDisplay 
+                    key={question.id}
+                    question={question}
+                    userAnswer={userAnswer}
+                    showCorrectAnswers={true}
+                    isReview={true}
+                    isPendingGrading={isPendingGrading}
+                    feedback={feedback}
+                    manualScore={manualScore}
+                    gradingStatus={results.gradingStatus}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* General Feedback */}
+        {results.generalFeedback && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Instructor Feedback</h3>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-blue-800 dark:text-blue-300">{results.generalFeedback}</p>
+            </div>
+          </div>
+        )}
 
         {/* Performance Breakdown */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 transition-colors">
@@ -184,21 +187,12 @@ const StudentQuizResults: React.FC = () => {
           </div>
         </div>
 
-        {/* Achievement Badge */}
-        {results.passed && (
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-6 mb-6 text-white text-center">
-            <Award className="w-16 h-16 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Congratulations!</h3>
-            <p className="text-green-100">You've successfully completed the quiz and earned your certificate.</p>
-          </div>
-        )}
-
         {/* Next Steps */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">What's Next?</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {!results.passed && (
+            {!results.passed && !results.requiresGrading && (
               <button
                 onClick={() => {
                   localStorage.removeItem('quizResults');

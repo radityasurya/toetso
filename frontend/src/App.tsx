@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import RouteLoader from './components/Common/RouteLoader';
+import LoginPage from './components/Auth/LoginPage';
+import SignupPage from './components/Auth/SignupPage';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+import ProfilePage from './components/Profile/ProfilePage';
 import DashboardOverview from './components/Dashboard/DashboardOverview';
 import CategoriesManager from './components/Categories/CategoriesManager';
 import CategoryForm from './components/Categories/CategoryForm';
@@ -19,13 +22,12 @@ import AllResults from './components/Results/AllResults';
 import SearchResults from './components/Search/SearchResults';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import SettingsPage from './components/Settings/SettingsPage';
+import UsersManager from './components/Users/UsersManager';
+import UserProfileView from './components/Users/UserProfileView';
 import StudentQuizEntry from './components/Student/StudentQuizEntry';
 import StudentQuizTaking from './components/Student/StudentQuizTaking';
 import StudentQuizResults from './components/Student/StudentQuizResults';
 import { ViewType } from './types';
-import LoginPage from './components/Auth/LoginPage';
-import SignupPage from './components/Auth/SignupPage';
-import ProfilePage from './components/Profile/ProfilePage';
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -72,11 +74,24 @@ function AppContent() {
             <div className="max-w-7xl mx-auto">
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
                 <Route path="/dashboard" element={
                   <RouteLoader>
                     <DashboardOverview />
+                  </RouteLoader>
+                } />
+                <Route path="/profile" element={
+                  <RouteLoader>
+                    <ProfilePage />
+                  </RouteLoader>
+                } />
+                <Route path="/users" element={
+                  <RouteLoader>
+                    <UsersManager />
+                  </RouteLoader>
+                } />
+                <Route path="/users/:id" element={
+                  <RouteLoader>
+                    <UserProfileView />
                   </RouteLoader>
                 } />
                 <Route path="/categories" element={
@@ -147,28 +162,6 @@ function AppContent() {
                     <SettingsPage />
                   </RouteLoader>
                 } />
-                <Route path="/profile/me" element={
-                  <RouteLoader>
-                    <ProfilePage />
-                  </RouteLoader>
-                } />
-                
-                {/* Student Routes */}
-                <Route path="/quiz/:id" element={
-                  <RouteLoader>
-                    <StudentQuizEntry />
-                  </RouteLoader>
-                } />
-                <Route path="/quiz/:id/take" element={
-                  <RouteLoader>
-                    <StudentQuizTaking />
-                  </RouteLoader>
-                } />
-                <Route path="/quiz/:id/results" element={
-                  <RouteLoader>
-                    <StudentQuizResults />
-                  </RouteLoader>
-                } />
                 
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
@@ -182,19 +175,39 @@ function AppContent() {
 
 function App() {
   return (
-    <HelmetProvider>
-      <ThemeProvider>
-        <Router>
-          <Routes>
-            {/* Auth pages shown full-screen */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            {/* Everything else through AppContent layout */}
-            <Route path="/*" element={<AppContent />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
-    </HelmetProvider>
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          
+          {/* Student Quiz Routes (Public) */}
+          <Route path="/quiz/:id" element={
+            <RouteLoader>
+              <StudentQuizEntry />
+            </RouteLoader>
+          } />
+          <Route path="/quiz/:id/take" element={
+            <RouteLoader>
+              <StudentQuizTaking />
+            </RouteLoader>
+          } />
+          <Route path="/quiz/:id/results" element={
+            <RouteLoader>
+              <StudentQuizResults />
+            </RouteLoader>
+          } />
+          
+          {/* Protected Admin Routes */}
+          <Route path="/*" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

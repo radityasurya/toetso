@@ -1,227 +1,610 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, Facebook, Github, Globe } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, MapPin, GraduationCap, Award, Building, Calendar, Briefcase, School, Heart, Check, ChevronRight, ChevronLeft } from 'lucide-react';
 
-const SignupPage = () => {
+// Components
+import AuthHeader from './components/AuthHeader';
+import FormInput from './components/FormInput';
+import SocialButtons from './components/SocialButtons';
+import ThemeToggle from './components/ThemeToggle';
+import StepIndicator from './components/StepIndicator';
+import AccountTypeSelector from './components/AccountTypeSelector';
+
+const SignupPage: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    role: '',
-    username: '',
+  const [activeTab, setActiveTab] = useState<'teacher' | 'student'>('teacher');
+  const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Shared account data between teacher and student
+  const [accountData, setAccountData] = useState({
     email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [teacherData, setTeacherData] = useState({
     firstName: '',
     lastName: '',
-    password: '',
-    repeatPassword: '',
-    agree: false
+    phone: '',
+    location: '',
+    jobTitle: '',
+    department: '',
+    yearsExperience: '',
+    specializations: [] as string[],
+    bio: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
-  const [errors, setErrors] = useState<{ [k: string]: string }>({});
 
-  const handleChange = (field: string, value: any) => {
-    setForm(f => ({ ...f, [field]: value }));
-    setErrors(e => ({ ...e, [field]: undefined, server: undefined }));
+  const [studentData, setStudentData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    location: '',
+    studentId: '',
+    grade: '',
+    school: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+  });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const specializations = [
+    'Traffic Signs',
+    'Road Rules',
+    'Vehicle Safety',
+    'Parking',
+    'Emergency Situations',
+    'Defensive Driving',
+    'Highway Driving',
+    'City Driving',
+  ];
+
+  const grades = [
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+    'Pre-Test',
+  ];
+
+  const steps = [
+    { number: 1, label: 'Account' },
+    { number: 2, label: 'Profile' },
+    { number: 3, label: 'Additional Info' }
+  ];
+
+  const validateAccountInfo = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!accountData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(accountData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!accountData.password) {
+      newErrors.password = 'Password is required';
+    } else if (accountData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(accountData.password)) {
+      newErrors.password = 'Password must contain uppercase, lowercase, and number';
+    }
+
+    if (accountData.password !== accountData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const validate = () => {
-    const e: typeof errors = {};
-    if (!form.firstName.trim()) e.firstName = 'First name required';
-    if (!form.lastName.trim()) e.lastName = 'Last name required';
-    if (!form.username.trim()) e.username = 'Username is required';
-    if (!/^[a-zA-Z0-9_]{3,16}$/.test(form.username)) e.username = 'Username must be 3-16 characters, letters/numbers/_';
-    if (!form.role || (form.role !== 'teacher' && form.role !== 'student')) e.role = 'Please select a role';
-    if (!form.email) e.email = 'Email required';
-    if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Enter a valid email address';
-    if (!form.password) e.password = 'Password required';
-    if (form.password.length < 8) e.password = 'Password too short';
-    if (!form.repeatPassword) e.repeatPassword = 'Repeat your password';
-    else if (form.repeatPassword !== form.password) e.repeatPassword = 'Passwords do not match';
-    if (!form.agree) e.agree = 'You must accept the terms';
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  const validateProfileInfo = () => {
+    const newErrors: { [key: string]: string } = {};
+    const data = activeTab === 'teacher' ? teacherData : studentData;
+
+    if (!data.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!data.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAccountDataChange = (field: string, value: string) => {
+    setAccountData({ ...accountData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: '' });
+    }
+  };
+
+  const handleTeacherInputChange = (field: string, value: string | string[]) => {
+    setTeacherData({ ...teacherData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: '' });
+    }
+  };
+
+  const handleStudentInputChange = (field: string, value: string) => {
+    setStudentData({ ...studentData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: '' });
+    }
+  };
+
+  const handleSpecializationToggle = (specialization: string) => {
+    const current = teacherData.specializations;
+    const updated = current.includes(specialization)
+      ? current.filter(s => s !== specialization)
+      : [...current, specialization];
+    
+    handleTeacherInputChange('specializations', updated);
+  };
+
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (validateAccountInfo()) {
+        setStep(2);
+      }
+    } else if (step === 2) {
+      if (validateProfileInfo()) {
+        setStep(3);
+      }
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (step === 2) {
+      setStep(1);
+    } else if (step === 3) {
+      setStep(2);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    // TODO: signup logic
-    alert('Signup logic here');
+    
+    let isValid = false;
+    
+    if (step === 1) {
+      isValid = validateAccountInfo();
+      if (isValid) {
+        setStep(2);
+        return;
+      }
+    } else if (step === 2) {
+      isValid = validateProfileInfo();
+      if (isValid) {
+        setStep(3);
+        return;
+      }
+    } else {
+      // All fields in step 3 are optional, so we can proceed
+      isValid = true;
+    }
+    
+    if (isValid) {
+      setIsLoading(true);
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Store auth state
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userEmail', accountData.email);
+        localStorage.setItem('userRole', activeTab);
+        
+        // Navigate to dashboard
+        navigate('/dashboard');
+      }, 2000);
+    }
+  };
+
+  const handleSocialSignup = (provider: string) => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      // Store auth state
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userEmail', `user@${provider.toLowerCase()}.com`);
+      localStorage.setItem('userRole', activeTab);
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    }, 1500);
+  };
+
+  const handleSkipDetails = () => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      // Store auth state
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userEmail', accountData.email);
+      localStorage.setItem('userRole', activeTab);
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    }, 1000);
+  };
+
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Information</h3>
+      
+      {/* Account Type Selection */}
+      <AccountTypeSelector activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      {/* Email Field */}
+      <FormInput
+        type="email"
+        value={accountData.email}
+        onChange={(value) => handleAccountDataChange('email', value)}
+        placeholder="Enter your email"
+        label="Email Address *"
+        error={errors.email}
+        icon={<Mail className="w-5 h-5" />}
+      />
+
+      {/* Password Field */}
+      <FormInput
+        type={showPassword ? 'text' : 'password'}
+        value={accountData.password}
+        onChange={(value) => handleAccountDataChange('password', value)}
+        placeholder="Create a password"
+        label="Password *"
+        error={errors.password}
+        icon={<Lock className="w-5 h-5" />}
+        rightIcon={showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+        onRightIconClick={() => setShowPassword(!showPassword)}
+      />
+
+      {/* Confirm Password Field */}
+      <FormInput
+        type={showConfirmPassword ? 'text' : 'password'}
+        value={accountData.confirmPassword}
+        onChange={(value) => handleAccountDataChange('confirmPassword', value)}
+        placeholder="Confirm your password"
+        label="Confirm Password *"
+        error={errors.confirmPassword}
+        icon={<Lock className="w-5 h-5" />}
+        rightIcon={showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+        onRightIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
+      />
+
+      {/* Social Signup */}
+      <SocialButtons onSocialLogin={handleSocialSignup} />
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Information</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormInput
+          type="text"
+          value={activeTab === 'teacher' ? teacherData.firstName : studentData.firstName}
+          onChange={(value) => activeTab === 'teacher' 
+            ? handleTeacherInputChange('firstName', value)
+            : handleStudentInputChange('firstName', value)
+          }
+          placeholder="Enter your first name"
+          label="First Name *"
+          error={errors.firstName}
+          icon={<User className="w-5 h-5" />}
+        />
+
+        <FormInput
+          type="text"
+          value={activeTab === 'teacher' ? teacherData.lastName : studentData.lastName}
+          onChange={(value) => activeTab === 'teacher' 
+            ? handleTeacherInputChange('lastName', value)
+            : handleStudentInputChange('lastName', value)
+          }
+          placeholder="Enter your last name"
+          label="Last Name *"
+          error={errors.lastName}
+          icon={<User className="w-5 h-5" />}
+        />
+
+        <FormInput
+          type="tel"
+          value={activeTab === 'teacher' ? teacherData.phone : studentData.phone}
+          onChange={(value) => activeTab === 'teacher' 
+            ? handleTeacherInputChange('phone', value)
+            : handleStudentInputChange('phone', value)
+          }
+          placeholder="Enter your phone number"
+          label="Phone Number"
+          error={errors.phone}
+          icon={<Phone className="w-5 h-5" />}
+        />
+
+        <FormInput
+          type="text"
+          value={activeTab === 'teacher' ? teacherData.location : studentData.location}
+          onChange={(value) => activeTab === 'teacher' 
+            ? handleTeacherInputChange('location', value)
+            : handleStudentInputChange('location', value)
+          }
+          placeholder="City, State"
+          label="Location"
+          error={errors.location}
+          icon={<MapPin className="w-5 h-5" />}
+        />
+      </div>
+      
+      {activeTab === 'teacher' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Professional Bio
+          </label>
+          <textarea
+            value={teacherData.bio}
+            onChange={(e) => handleTeacherInputChange('bio', e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
+            placeholder="Tell us about your teaching experience and expertise..."
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTeacherStep3 = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Professional Information (Optional)</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormInput
+          type="text"
+          value={teacherData.jobTitle}
+          onChange={(value) => handleTeacherInputChange('jobTitle', value)}
+          placeholder="e.g. Driving Instructor"
+          label="Job Title"
+          error={errors.jobTitle}
+          icon={<Briefcase className="w-5 h-5" />}
+        />
+
+        <FormInput
+          type="text"
+          value={teacherData.department}
+          onChange={(value) => handleTeacherInputChange('department', value)}
+          placeholder="e.g. Education Department"
+          label="Department"
+          error={errors.department}
+          icon={<Building className="w-5 h-5" />}
+        />
+
+        <FormInput
+          type="number"
+          value={teacherData.yearsExperience}
+          onChange={(value) => handleTeacherInputChange('yearsExperience', value)}
+          placeholder="e.g. 5"
+          label="Years of Experience"
+          error={errors.yearsExperience}
+          icon={<Calendar className="w-5 h-5" />}
+        />
+      </div>
+
+      {/* Specializations */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Specializations
+        </label>
+        {errors.specializations && (
+          <div className="flex items-center space-x-1 mb-2">
+            <AlertCircle className="w-4 h-4 text-red-500" />
+            <p className="text-sm text-red-600 dark:text-red-400">{errors.specializations}</p>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          {specializations.map((spec) => (
+            <div 
+              key={spec}
+              onClick={() => handleSpecializationToggle(spec)}
+              className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                teacherData.specializations.includes(spec)
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                  : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                teacherData.specializations.includes(spec)
+                  ? 'bg-blue-500 text-white'
+                  : 'border border-gray-400 dark:border-gray-500'
+              }`}>
+                {teacherData.specializations.includes(spec) && <Check className="w-3 h-3" />}
+              </div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{spec}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStudentStep3 = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Student Information (Optional)</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormInput
+          type="text"
+          value={studentData.studentId}
+          onChange={(value) => handleStudentInputChange('studentId', value)}
+          placeholder="Enter your student ID if you have one"
+          label="Student ID"
+          error={errors.studentId}
+          icon={<Award className="w-5 h-5" />}
+        />
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Grade Level
+          </label>
+          <select
+            value={studentData.grade}
+            onChange={(e) => handleStudentInputChange('grade', e.target.value)}
+            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors ${
+              errors.grade ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+            }`}
+          >
+            <option value="">Select your grade level</option>
+            {grades.map((grade) => (
+              <option key={grade} value={grade}>{grade}</option>
+            ))}
+          </select>
+          {errors.grade && (
+            <div className="flex items-center space-x-1 mt-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.grade}</p>
+            </div>
+          )}
+        </div>
+
+        <FormInput
+          type="text"
+          value={studentData.school}
+          onChange={(value) => handleStudentInputChange('school', value)}
+          placeholder="Enter your school or institution"
+          label="School/Institution"
+          error={errors.school}
+          icon={<School className="w-5 h-5" />}
+        />
+      </div>
+
+      {/* Emergency Contact */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Emergency Contact (Optional)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormInput
+            type="text"
+            value={studentData.emergencyContact}
+            onChange={(value) => handleStudentInputChange('emergencyContact', value)}
+            placeholder="Enter emergency contact name"
+            label="Emergency Contact Name"
+            error={errors.emergencyContact}
+            icon={<Heart className="w-5 h-5" />}
+          />
+
+          <FormInput
+            type="tel"
+            value={studentData.emergencyPhone}
+            onChange={(value) => handleStudentInputChange('emergencyPhone', value)}
+            placeholder="Enter emergency contact phone"
+            label="Emergency Contact Phone"
+            error={errors.emergencyPhone}
+            icon={<Phone className="w-5 h-5" />}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCurrentStep = () => {
+    switch (step) {
+      case 1:
+        return renderStep1();
+      case 2:
+        return renderStep2();
+      case 3:
+        return activeTab === 'teacher' ? renderTeacherStep3() : renderStudentStep3();
+      default:
+        return renderStep1();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-purple-100 to-blue-100 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white shadow-xl rounded-xl p-8 space-y-8 border border-purple-100">
-        <div className="flex flex-col items-center">
-          <User className="w-10 h-10 mb-2 text-purple-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Create your Account</h2>
-          <p className="text-gray-500 text-sm">It's quick and easy!</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors">
+      <div className="w-full max-w-md">
+        {/* Logo and Header */}
+        <AuthHeader 
+          title="Join Quiz Master" 
+          subtitle="Create your account to get started" 
+        />
+        
+        {/* Step Indicator */}
+        <StepIndicator currentStep={step} steps={steps} />
+
+        {/* Signup Form */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+          {/* Form Content */}
+          <form onSubmit={handleSubmit} className="p-8">
+            {renderCurrentStep()}
+
+            {/* Navigation Buttons */}
+            <div className="mt-8 flex justify-between">
+              {step > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+              )}
+              
+              {step < 3 ? (
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className={`${step === 1 ? 'ml-auto' : ''} flex items-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors`}
+                >
+                  {step === 1 ? <span>Create Account</span> : <span>Next</span>}
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <div className="ml-auto flex ">
+                  <button
+                    type="button"
+                    onClick={handleSkipDetails}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Skip for Now
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Creating Account...</span>
+                      </>
+                    ) : (
+                      <span>Create Account</span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </form>
         </div>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="flex space-x-2">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-              <input
-                type="text"
-                value={form.firstName}
-                onChange={e => handleChange('firstName', e.target.value)}
-                className={`w-full px-3 py-2 border ${errors.firstName ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-blue-500`}
-                placeholder="First name"
-              />
-              {errors.firstName && <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>}
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-              <input
-                type="text"
-                value={form.lastName}
-                onChange={e => handleChange('lastName', e.target.value)}
-                className={`w-full px-3 py-2 border ${errors.lastName ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-blue-500`}
-                placeholder="Last name"
-              />
-              {errors.lastName && <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-            <input
-              type="text"
-              value={form.username}
-              onChange={e => handleChange('username', e.target.value)}
-              className={`w-full px-3 py-2 border ${errors.username ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-blue-500`}
-              placeholder="Username"
-            />
-            {errors.username && <p className="text-xs text-red-500 mt-1">{errors.username}</p>}
-          </div>
-          {/* Role Tabbed Button */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">I am a *</label>
-            <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-              <button
-                type="button"
-                className={`flex-1 px-4 py-2 text-center font-medium transition-colors ${
-                  form.role === 'student'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-blue-50'
-                }`}
-                onClick={() => handleChange('role', 'student')}
-              >
-                Student
-              </button>
-              <button
-                type="button"
-                className={`flex-1 px-4 py-2 text-center font-medium transition-colors border-l border-gray-300 dark:border-gray-600 ${
-                  form.role === 'teacher'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-blue-50'
-                }`}
-                onClick={() => handleChange('role', 'teacher')}
-              >
-                Teacher
-              </button>
-            </div>
-            {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role}</p>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <div className="relative">
-              <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => handleChange('email', e.target.value)}
-                className={`w-full pl-10 pr-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-1 focus:ring-purple-500`}
-                placeholder="Email address"
-              />
-            </div>
-            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
-          </div>
-          {/* Password and Repeat Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <div className="relative">
-              <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={e => handleChange('password', e.target.value)}
-                className={`w-full pl-10 pr-10 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-1 focus:ring-purple-500`}
-                placeholder="Create password"
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(s => !s)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Repeat Password</label>
-            <div className="relative">
-              <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={form.repeatPassword}
-                onChange={e => handleChange('repeatPassword', e.target.value)}
-                className={`w-full pl-10 pr-10 py-2 border ${errors.repeatPassword ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-1 focus:ring-purple-500`}
-                placeholder="Repeat password"
-                autoComplete="new-password"
-              />
-            </div>
-            {errors.repeatPassword && <p className="text-xs text-red-500 mt-1">{errors.repeatPassword}</p>}
-          </div>
-          <div className="flex items-center mt-4">
-            <input
-              id="terms"
-              type="checkbox"
-              checked={form.agree}
-              onChange={e => handleChange('agree', String(e.target.checked) === 'true' || e.target.checked)}
-              className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <label htmlFor="terms" className="ml-2 block text-xs text-gray-500">
-              I agree to the{' '}
-              <a href="#" className="text-blue-600 hover:underline font-medium">
-                Terms and Conditions
-              </a>
-            </label>
-            {errors.agree && <span className="ml-2 text-xs text-red-500">{errors.agree}</span>}
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg shadow-lg transition-colors font-semibold text-lg mt-4"
-          >
-            Create Account
-          </button>
-        </form>
-        <div>
-          <div className="w-full text-center border-t border-gray-200 my-6 relative">
-            <span className="bg-white px-2 absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-gray-400">
-              OR SIGN UP WITH
-            </span>
-          </div>
-          <div className="flex space-x-2 justify-center">
-            <button className="p-3 rounded-lg bg-blue-100 hover:bg-blue-200">
-              <Facebook className="w-5 h-5 text-blue-600" title="Facebook signup" />
-            </button>
-            <button className="p-3 rounded-lg bg-gray-100 hover:bg-gray-200">
-              <Github className="w-5 h-5 text-black" title="GitHub signup" />
-            </button>
-            <button className="p-3 rounded-lg bg-red-100 hover:bg-red-200" title="Google signup">
-              <Globe className="w-5 h-5 text-red-600" />
-            </button>
-          </div>
-        </div>
-        <div className="text-center text-sm text-gray-500 mt-4">
-          Already have an account?
-          <button onClick={() => navigate('/login')} className="ml-2 text-purple-600 hover:underline font-medium">
-            Log in
-          </button>
+
+        {/* Login Link - Outside the form */}
+        <div className="text-center mt-8">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Already have an account?{' '}
+            <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors">
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
+
+      {/* Theme Toggle */}
+      <ThemeToggle />
     </div>
   );
 };
