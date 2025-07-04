@@ -1,0 +1,4 @@
+src/Auth/*
+
+src/Sidebar.tsx
+src/Header.tsx

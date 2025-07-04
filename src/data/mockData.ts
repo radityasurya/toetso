@@ -1,0 +1,603 @@
+import { Question, Quiz, QuizResult, Category, User } from '../types';
+
+export const categories: Category[] = [
+  { id: '1', name: 'Traffic Signs', description: 'Road signs and signals', color: '#3B82F6', questionCount: 45 },
+  { id: '2', name: 'Road Rules', description: 'Traffic laws and regulations', color: '#10B981', questionCount: 38 },
+  { id: '3', name: 'Vehicle Safety', description: 'Safety equipment and procedures', color: '#F59E0B', questionCount: 29 },
+  { id: '4', name: 'Parking', description: 'Parking rules and regulations', color: '#EF4444', questionCount: 22 },
+  { id: '5', name: 'Emergency Situations', description: 'Emergency procedures and protocols', color: '#8B5CF6', questionCount: 18 },
+];
+
+export const mockUsers: User[] = [
+  {
+    id: '1',
+    firstName: 'John',
+    lastName: 'Smith',
+    email: 'admin@quizmaster.com',
+    role: 'admin',
+    avatar: '',
+    phone: '+1 (555) 123-4567',
+    location: 'San Francisco, CA',
+    bio: 'System administrator with expertise in educational technology.',
+    jobTitle: 'System Administrator',
+    department: 'IT Department',
+    joinDate: new Date('2020-01-15'),
+    isActive: true,
+    lastLogin: new Date('2024-01-25T10:30:00'),
+  },
+  {
+    id: '2',
+    firstName: 'Sarah',
+    lastName: 'Johnson',
+    email: 'sarah.johnson@quizmaster.com',
+    role: 'teacher',
+    avatar: '',
+    phone: '+1 (555) 234-5678',
+    location: 'Los Angeles, CA',
+    bio: 'Experienced driving instructor with over 10 years of teaching experience. Passionate about road safety and helping students become confident drivers.',
+    jobTitle: 'Senior Driving Instructor',
+    department: 'Education Department',
+    joinDate: new Date('2019-03-20'),
+    isActive: true,
+    lastLogin: new Date('2024-01-25T09:15:00'),
+    specializations: ['Traffic Signs', 'Road Rules', 'Vehicle Safety'],
+    yearsExperience: 12,
+  },
+  {
+    id: '3',
+    firstName: 'Mike',
+    lastName: 'Davis',
+    email: 'mike.davis@email.com',
+    role: 'student',
+    avatar: '',
+    phone: '+1 (555) 345-6789',
+    location: 'San Diego, CA',
+    bio: 'Eager to learn and become a safe driver.',
+    joinDate: new Date('2024-01-10'),
+    isActive: true,
+    lastLogin: new Date('2024-01-24T16:45:00'),
+    studentId: 'STU-2024-001',
+    enrollmentDate: new Date('2024-01-10'),
+    grade: 'Beginner',
+  },
+  {
+    id: '4',
+    firstName: 'Emily',
+    lastName: 'Wilson',
+    email: 'emily.wilson@quizmaster.com',
+    role: 'teacher',
+    avatar: '',
+    phone: '+1 (555) 456-7890',
+    location: 'Seattle, WA',
+    bio: 'Specialized in emergency driving situations and defensive driving techniques.',
+    jobTitle: 'Driving Instructor',
+    department: 'Education Department',
+    joinDate: new Date('2021-06-15'),
+    isActive: true,
+    lastLogin: new Date('2024-01-24T14:20:00'),
+    specializations: ['Emergency Situations', 'Parking'],
+    yearsExperience: 8,
+  },
+  {
+    id: '5',
+    firstName: 'David',
+    lastName: 'Brown',
+    email: 'david.brown@email.com',
+    role: 'student',
+    avatar: '',
+    phone: '+1 (555) 567-8901',
+    location: 'Portland, OR',
+    bio: 'Working towards getting my driver\'s license.',
+    joinDate: new Date('2024-01-05'),
+    isActive: true,
+    lastLogin: new Date('2024-01-23T11:10:00'),
+    studentId: 'STU-2024-002',
+    enrollmentDate: new Date('2024-01-05'),
+    grade: 'Intermediate',
+  },
+];
+
+export const mockQuestions: Question[] = [
+  {
+    id: '1',
+    question: 'What does a red octagonal sign mean?',
+    type: 'multiple-choice',
+    options: ['Yield', 'Stop', 'Caution', 'No Entry'],
+    correctAnswer: 1,
+    explanation: 'A red octagonal sign universally means "Stop". Drivers must come to a complete stop.',
+    category: 'Traffic Signs',
+    difficulty: 'easy',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '2',
+    question: 'What is the maximum speed limit in residential areas?',
+    type: 'multiple-choice',
+    options: ['25 mph', '30 mph', '35 mph', '40 mph'],
+    correctAnswer: 0,
+    explanation: 'In most residential areas, the speed limit is 25 mph unless otherwise posted.',
+    category: 'Road Rules',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-16'),
+    updatedAt: new Date('2024-01-16'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '3',
+    question: 'When should you use your turn signal?',
+    type: 'multiple-choice',
+    options: ['Only when other cars are present', 'At least 100 feet before turning', 'Only at intersections', 'Only when required by law'],
+    correctAnswer: 1,
+    explanation: 'You should activate your turn signal at least 100 feet before making a turn to give other drivers adequate warning.',
+    category: 'Road Rules',
+    difficulty: 'easy',
+    createdAt: new Date('2024-01-17'),
+    updatedAt: new Date('2024-01-17'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '4',
+    question: 'What should you do when approaching a school bus with flashing red lights?',
+    type: 'multiple-choice',
+    options: ['Slow down and proceed carefully', 'Stop at least 20 feet away', 'Change lanes and continue', 'Honk to alert the driver'],
+    correctAnswer: 1,
+    explanation: 'When a school bus has flashing red lights, you must stop at least 20 feet away and wait until the lights stop flashing.',
+    category: 'Road Rules',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-18'),
+    updatedAt: new Date('2024-01-18'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '5',
+    question: 'What is the minimum following distance in good weather conditions?',
+    type: 'multiple-choice',
+    options: ['1 second', '2 seconds', '3 seconds', '4 seconds'],
+    correctAnswer: 2,
+    explanation: 'The 3-second rule is the minimum safe following distance in good weather conditions.',
+    category: 'Vehicle Safety',
+    difficulty: 'easy',
+    createdAt: new Date('2024-01-19'),
+    updatedAt: new Date('2024-01-19'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '6',
+    question: 'What does a yellow diamond-shaped sign typically indicate?',
+    type: 'multiple-choice',
+    options: ['Construction zone', 'Warning or caution', 'No parking', 'Speed limit'],
+    correctAnswer: 1,
+    explanation: 'Yellow diamond-shaped signs are warning signs that alert drivers to potential hazards or changes in road conditions.',
+    category: 'Traffic Signs',
+    difficulty: 'easy',
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-20'),
+    createdBy: '4', // Emily Wilson
+  },
+  {
+    id: '7',
+    question: 'When is it legal to park in a handicap space?',
+    type: 'multiple-choice',
+    options: ['When running a quick errand', 'Only with a valid handicap permit or license plate', 'During off-peak hours', 'Never'],
+    correctAnswer: 1,
+    explanation: 'Handicap parking spaces can only be used by vehicles displaying a valid handicap permit or license plate.',
+    category: 'Parking',
+    difficulty: 'easy',
+    createdAt: new Date('2024-01-21'),
+    updatedAt: new Date('2024-01-21'),
+    createdBy: '4', // Emily Wilson
+  },
+  {
+    id: '8',
+    question: 'What should you do if your brakes fail while driving?',
+    type: 'multiple-choice',
+    options: ['Turn off the engine immediately', 'Pump the brakes and use the parking brake gradually', 'Swerve to avoid obstacles', 'Honk continuously'],
+    correctAnswer: 1,
+    explanation: 'If brakes fail, pump the brake pedal rapidly, then gradually apply the parking brake while steering to a safe area.',
+    category: 'Emergency Situations',
+    difficulty: 'hard',
+    createdAt: new Date('2024-01-22'),
+    updatedAt: new Date('2024-01-22'),
+    createdBy: '4', // Emily Wilson
+  },
+  // New question types examples
+  {
+    id: '9',
+    question: 'Which of the following are required safety equipment in a vehicle? (Select all that apply)',
+    type: 'multiple-answer',
+    options: ['Seat belts', 'Airbags', 'Working headlights', 'Spare tire', 'First aid kit', 'Fire extinguisher'],
+    correctAnswers: [0, 2], // Seat belts and working headlights are legally required
+    explanation: 'Seat belts and working headlights are legally required safety equipment in all vehicles.',
+    category: 'Vehicle Safety',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-23'),
+    updatedAt: new Date('2024-01-23'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '10',
+    question: 'The standard speed limit in school zones during school hours is _____ mph.',
+    type: 'fill-in-blank',
+    correctText: '15',
+    explanation: 'School zones typically have a speed limit of 15 mph during school hours to ensure the safety of children.',
+    category: 'Road Rules',
+    difficulty: 'easy',
+    createdAt: new Date('2024-01-24'),
+    updatedAt: new Date('2024-01-24'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '11',
+    question: 'Which actions should you take when involved in a minor traffic accident? (Select all that apply)',
+    type: 'multiple-answer',
+    options: ['Move vehicles out of traffic if possible', 'Call 911', 'Exchange insurance information', 'Take photos of the scene', 'Leave immediately if no one is hurt', 'Admit fault to the other driver'],
+    correctAnswers: [0, 1, 2, 3], // All except leaving immediately and admitting fault
+    explanation: 'After a minor accident, you should move vehicles to safety, call 911, exchange information, and document the scene. Never leave the scene or admit fault.',
+    category: 'Emergency Situations',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-25'),
+    updatedAt: new Date('2024-01-25'),
+    createdBy: '4', // Emily Wilson
+  },
+  {
+    id: '12',
+    question: 'When parallel parking, you should park within _____ inches of the curb.',
+    type: 'fill-in-blank',
+    correctText: '12',
+    explanation: 'When parallel parking, your vehicle should be within 12 inches (1 foot) of the curb.',
+    category: 'Parking',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-26'),
+    updatedAt: new Date('2024-01-26'),
+    createdBy: '4', // Emily Wilson
+  },
+  // New question types: Long Answer, Matching, Ordering
+  {
+    id: '13',
+    question: 'Explain the proper procedure for merging onto a highway from an entrance ramp.',
+    type: 'long-answer',
+    explanation: 'The proper procedure includes accelerating on the entrance ramp to match highway speed, using turn signals, looking for a gap in traffic, and merging smoothly without stopping.',
+    category: 'Road Rules',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-27'),
+    updatedAt: new Date('2024-01-27'),
+    createdBy: '2', // Sarah Johnson
+    requiresManualGrading: true,
+    gradingCriteria: 'Student should mention: acceleration to match traffic speed, use of turn signals, checking blind spots, finding a gap in traffic, and smooth merging without stopping.',
+    maxScore: 5,
+  },
+  {
+    id: '14',
+    question: 'Match each traffic sign with its correct meaning.',
+    type: 'matching',
+    matchingPairs: [
+      { left: 'Red octagonal sign', right: 'Stop' },
+      { left: 'Yellow triangle', right: 'Yield' },
+      { left: 'Red circle with diagonal line', right: 'Prohibition' },
+      { left: 'Yellow diamond', right: 'Warning' },
+      { left: 'White rectangle', right: 'Regulatory' }
+    ],
+    explanation: 'Traffic signs have standardized shapes and colors to help drivers quickly recognize their meaning, even from a distance.',
+    category: 'Traffic Signs',
+    difficulty: 'medium',
+    createdAt: new Date('2024-01-28'),
+    updatedAt: new Date('2024-01-28'),
+    createdBy: '4', // Emily Wilson
+  },
+  {
+    id: '15',
+    question: 'Place the following steps in the correct order for changing a flat tire.',
+    type: 'ordering',
+    correctOrder: [
+      'Pull over to a safe location',
+      'Turn on hazard lights',
+      'Loosen the lug nuts',
+      'Use the jack to raise the vehicle',
+      'Remove the lug nuts and flat tire',
+      'Mount the spare tire',
+      'Tighten the lug nuts',
+      'Lower the vehicle'
+    ],
+    explanation: 'Following the correct sequence when changing a flat tire ensures safety and proper installation of the spare tire.',
+    category: 'Vehicle Safety',
+    difficulty: 'hard',
+    createdAt: new Date('2024-01-29'),
+    updatedAt: new Date('2024-01-29'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '16',
+    question: 'Describe the steps you would take if you encounter dense fog while driving.',
+    type: 'long-answer',
+    explanation: 'When driving in fog, you should slow down, use low beam headlights, increase following distance, use fog lights if available, use the right edge of the road as a guide, and avoid sudden stops.',
+    category: 'Emergency Situations',
+    difficulty: 'hard',
+    createdAt: new Date('2024-01-30'),
+    updatedAt: new Date('2024-01-30'),
+    createdBy: '4', // Emily Wilson
+    requiresManualGrading: true,
+    gradingCriteria: 'Student should mention: reducing speed, using low beam headlights (not high beams), increasing following distance, using fog lights if available, using road markings as guides, and avoiding sudden stops.',
+    maxScore: 5,
+  },
+  {
+    id: '17',
+    question: 'Explain the concept of defensive driving and how it can help prevent accidents.',
+    type: 'long-answer',
+    explanation: 'Defensive driving involves anticipating potential hazards and taking precautions to avoid accidents, even when others make mistakes. It includes maintaining awareness, keeping a safe following distance, and being prepared for unexpected situations.',
+    category: 'Road Rules',
+    difficulty: 'medium',
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-01'),
+    createdBy: '2', // Sarah Johnson
+    requiresManualGrading: true,
+    gradingCriteria: 'Student should explain: anticipating hazards, maintaining awareness of surroundings, keeping safe distances, being prepared for unexpected situations, and how these practices help prevent accidents.',
+    maxScore: 5,
+  },
+  {
+    id: '18',
+    question: 'Match each driving offense with its appropriate penalty.',
+    type: 'matching',
+    matchingPairs: [
+      { left: 'Speeding (15-20 mph over limit)', right: 'Fine and 3 points' },
+      { left: 'Running a red light', right: 'Fine and 4 points' },
+      { left: 'Driving under influence (DUI)', right: 'License suspension and possible jail time' },
+      { left: 'Driving without insurance', right: 'Fine and vehicle impoundment' },
+      { left: 'Using phone while driving', right: 'Fine and 2 points' }
+    ],
+    explanation: 'Different traffic violations carry different penalties based on their severity and potential danger to public safety.',
+    category: 'Road Rules',
+    difficulty: 'hard',
+    createdAt: new Date('2024-02-02'),
+    updatedAt: new Date('2024-02-02'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '19',
+    question: 'Arrange the following actions in the correct order when approaching a four-way stop.',
+    type: 'ordering',
+    correctOrder: [
+      'Approach the intersection',
+      'Slow down and prepare to stop',
+      'Come to a complete stop at the stop line',
+      'Check for vehicles that arrived before you',
+      'Yield to vehicles on your right if you arrived simultaneously',
+      'Signal your intentions',
+      'Proceed when it\'s your turn',
+      'Continue through the intersection at a safe speed'
+    ],
+    explanation: 'Following the proper procedure at a four-way stop ensures safe and orderly traffic flow.',
+    category: 'Road Rules',
+    difficulty: 'medium',
+    createdAt: new Date('2024-02-03'),
+    updatedAt: new Date('2024-02-03'),
+    createdBy: '4', // Emily Wilson
+  },
+  {
+    id: '20',
+    question: 'Describe the proper technique for driving in heavy rain and how to handle hydroplaning if it occurs.',
+    type: 'long-answer',
+    explanation: 'In heavy rain, drivers should reduce speed, increase following distance, use headlights, avoid sudden movements, and stay in the middle lanes where water is less likely to accumulate. If hydroplaning occurs, drivers should ease off the accelerator (don\'t brake), keep the steering wheel straight, and gently regain control as traction returns.',
+    category: 'Emergency Situations',
+    difficulty: 'hard',
+    createdAt: new Date('2024-02-04'),
+    updatedAt: new Date('2024-02-04'),
+    createdBy: '4', // Emily Wilson
+    requiresManualGrading: true,
+    gradingCriteria: 'Student should mention: reducing speed in rain, increasing following distance, using headlights, avoiding standing water, and the correct response to hydroplaning (ease off accelerator, don\'t brake suddenly, keep steering wheel straight).',
+    maxScore: 5,
+  }
+];
+
+export const mockQuizzes: Quiz[] = [
+  {
+    id: '1',
+    title: 'Basic Traffic Signs',
+    description: 'Test your knowledge of common traffic signs and their meanings',
+    category: 'Traffic Signs',
+    questions: ['1', '6', '14'],
+    timeLimit: 10,
+    passingScore: 80,
+    difficulty: 'easy',
+    isActive: true,
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-20'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '2',
+    title: 'Road Rules Comprehensive',
+    description: 'Complete test of traffic laws and regulations for safe driving',
+    category: 'Road Rules',
+    questions: ['2', '3', '4', '10', '13', '17', '18', '19'],
+    timeLimit: 20,
+    passingScore: 75,
+    difficulty: 'medium',
+    isActive: true,
+    createdAt: new Date('2024-01-21'),
+    updatedAt: new Date('2024-01-21'),
+    createdBy: '2', // Sarah Johnson
+    requiresGrading: true,
+  },
+  {
+    id: '3',
+    title: 'Vehicle Safety Essentials',
+    description: 'Essential safety knowledge every driver should know',
+    category: 'Vehicle Safety',
+    questions: ['5', '9', '15'],
+    timeLimit: 8,
+    passingScore: 70,
+    difficulty: 'easy',
+    isActive: false,
+    createdAt: new Date('2024-01-22'),
+    updatedAt: new Date('2024-01-22'),
+    createdBy: '2', // Sarah Johnson
+  },
+  {
+    id: '4',
+    title: 'Emergency Response',
+    description: 'How to handle emergency situations while driving',
+    category: 'Emergency Situations',
+    questions: ['8', '11', '16', '20'],
+    timeLimit: 15,
+    passingScore: 85,
+    difficulty: 'hard',
+    isActive: true,
+    createdAt: new Date('2024-01-23'),
+    updatedAt: new Date('2024-01-23'),
+    createdBy: '4', // Emily Wilson
+    requiresGrading: true,
+  },
+  {
+    id: '5',
+    title: 'Parking Rules & Regulations',
+    description: 'Understanding parking laws and proper parking procedures',
+    category: 'Parking',
+    questions: ['7', '12'],
+    timeLimit: 12,
+    passingScore: 75,
+    difficulty: 'medium',
+    isActive: true,
+    createdAt: new Date('2024-01-24'),
+    updatedAt: new Date('2024-01-24'),
+    createdBy: '4', // Emily Wilson
+  },
+];
+
+export const mockResults: QuizResult[] = [
+  {
+    id: '1',
+    quizId: '1',
+    studentId: '3', // Mike Davis
+    score: 85,
+    totalQuestions: 2,
+    correctAnswers: 2,
+    timeSpent: 180,
+    completedAt: new Date('2024-01-22'),
+    answers: { 0: 1, 1: 1 },
+  },
+  {
+    id: '2',
+    quizId: '2',
+    studentId: '3', // Mike Davis
+    score: 67,
+    totalQuestions: 4,
+    correctAnswers: 3,
+    timeSpent: 420,
+    completedAt: new Date('2024-01-23'),
+    answers: { 0: 0, 1: 1, 2: 0, 3: '15' },
+    gradingStatus: 'pending',
+    feedback: {},
+    manualScores: {},
+  },
+  {
+    id: '3',
+    quizId: '1',
+    studentId: '5', // David Brown
+    score: 100,
+    totalQuestions: 2,
+    correctAnswers: 2,
+    timeSpent: 150,
+    completedAt: new Date('2024-01-24'),
+    answers: { 0: 1, 1: 1 },
+  },
+  {
+    id: '4',
+    quizId: '4',
+    studentId: '5', // David Brown
+    score: 75,
+    totalQuestions: 2,
+    correctAnswers: 1,
+    timeSpent: 300,
+    completedAt: new Date('2024-01-25'),
+    answers: { 0: 1, 1: [0, 1, 2, 3] },
+    gradingStatus: 'pending',
+    feedback: {},
+    manualScores: {},
+  },
+  {
+    id: '5',
+    quizId: '2',
+    studentId: '3', // Mike Davis
+    score: 80,
+    totalQuestions: 5,
+    correctAnswers: 4,
+    timeSpent: 600,
+    completedAt: new Date('2024-01-26'),
+    answers: { 
+      0: 0, 
+      1: 1, 
+      2: 1, 
+      3: '15',
+      4: 'When merging onto a highway, I would accelerate on the entrance ramp to match the speed of highway traffic, use my turn signal to indicate my intention to merge, check my mirrors and blind spots for a gap in traffic, and then smoothly merge into the flow of traffic without stopping.' 
+    },
+    gradingStatus: 'completed',
+    feedback: { 
+      4: 'Good explanation of the merging process. You covered acceleration, signaling, and finding a gap in traffic. Remember to also mention checking blind spots specifically.' 
+    },
+    manualScores: { 4: 4 }, // Out of 5
+  },
+  {
+    id: '6',
+    quizId: '4',
+    studentId: '3', // Mike Davis
+    score: 70,
+    totalQuestions: 4,
+    correctAnswers: 2,
+    timeSpent: 720,
+    completedAt: new Date('2024-01-27'),
+    answers: {
+      0: 1,
+      1: [0, 1, 2, 3],
+      2: 'When encountering dense fog while driving, I would immediately reduce my speed to match visibility conditions. I would turn on my low beam headlights (not high beams as they reflect back in fog). I would increase my following distance from other vehicles and use the right edge line of the road as a guide. I would avoid sudden stops and use my defroster to keep windows clear. If visibility becomes too poor, I would find a safe place to pull over completely off the road and wait for conditions to improve.',
+      3: 'I would slow down, turn on my low beams, increase following distance, and use the right edge of the road as a guide.'
+    },
+    gradingStatus: 'completed',
+    feedback: {
+      2: 'Excellent comprehensive answer that covers all key points. You correctly mentioned reducing speed, using low beams instead of high beams, increasing following distance, using road markings as guides, and avoiding sudden stops. You also added good details about using the defroster and pulling over if conditions are too dangerous.',
+      3: 'Good concise answer that covers the main points, though it could include more detail about fog lights and avoiding sudden maneuvers.'
+    },
+    manualScores: { 
+      2: 5, // Full score
+      3: 3  // Partial score
+    }
+  },
+  {
+    id: '7',
+    quizId: '2',
+    studentId: '5', // David Brown
+    score: 65,
+    totalQuestions: 8,
+    correctAnswers: 5,
+    timeSpent: 900,
+    completedAt: new Date('2024-01-28'),
+    answers: {
+      0: 0,
+      1: 1,
+      2: 0,
+      3: '15',
+      4: 'Defensive driving means being careful and watching out for other drivers who might make mistakes. It helps prevent accidents by staying alert and being prepared.',
+      5: { 
+        'Speeding (15-20 mph over limit)': 'Fine and 3 points',
+        'Running a red light': 'Fine and 4 points',
+        'Driving under influence (DUI)': 'Fine and vehicle impoundment',
+        'Driving without insurance': 'License suspension and possible jail time',
+        'Using phone while driving': 'Fine and 2 points'
+      },
+      6: [
+        'Approach the intersection',
+        'Slow down and prepare to stop',
+        'Come to a complete stop at the stop line',
+        'Check for vehicles that arrived before you',
+        'Signal your intentions',
+        'Yield to vehicles on your right if you arrived simultaneously',
+        'Proceed when it\'s your turn',
+        'Continue through the intersection at a safe speed'
+      ]
+    },
+    gradingStatus: 'pending',
+    feedback: {},
+    manualScores: {}
+  }
+];
