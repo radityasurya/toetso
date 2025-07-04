@@ -23,12 +23,19 @@ interface QuizSubmission {
   submittedAt: Date;
   score: number | null;
   status: 'needs_grading' | 'partially_graded' | 'graded' | 'passed' | 'failed';
-  answers: { [questionIndex: number]: any };
+  answers: { [questionIndex: number]: number | number[] | string | string[] | { [key: string]: string } };
   timeSpent: number;
   feedback?: { [questionIndex: number]: string };
   manualScores?: { [questionIndex: number]: number };
   gradingStatus: 'pending' | 'completed' | 'partial';
   generalFeedback?: string;
+}
+
+// For additional type safety of location.state
+interface LocationQuizResultsState {
+  selectedSubmissionId?: string;
+  studentName?: string;
+  studentEmail?: string;
 }
 
 const QuizResults: React.FC = () => {
@@ -43,7 +50,7 @@ const QuizResults: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'name'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const itemsPerPage = 10;
   const [showFilters, setShowFilters] = useState(false);
   
   // Grading state
@@ -53,9 +60,10 @@ const QuizResults: React.FC = () => {
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
 
   // Get the selected submission ID from location state (if coming from AllResults)
-  const selectedSubmissionId = location.state?.selectedSubmissionId;
-  const studentNameFromState = location.state?.studentName;
-  const studentEmailFromState = location.state?.studentEmail;
+  const locationState = location.state as LocationQuizResultsState | null;
+  const selectedSubmissionId = locationState?.selectedSubmissionId;
+  const studentNameFromState = locationState?.studentName;
+  const studentEmailFromState = locationState?.studentEmail;
 
   // Generate mock submissions
   useEffect(() => {
@@ -75,7 +83,7 @@ const QuizResults: React.FC = () => {
         // Generate 15 mock submissions
         for (let i = 1; i <= 15; i++) {
           const score = Math.floor(Math.random() * 41) + 60; // Random score between 60-100
-          const answers: { [key: number]: any } = {};
+          const answers: { [key: number]: number | number[] | string | string[] | { [key: string]: string } } = {};
           
           // Generate random answers for each question
           quizQuestions.forEach((question, index) => {
@@ -256,8 +264,9 @@ const QuizResults: React.FC = () => {
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  const handleViewSubmission = (submission: QuizSubmission) => {
-    setSelectedSubmission(submission);
+  const handleViewSubmission = (submissionId: string) => {
+    const found = submissions.find((s) => s.id === submissionId);
+    if (found) setSelectedSubmission(found);
   };
 
   const handleSaveGrade = (questionIndex: number, score: number, feedback: string) => {
